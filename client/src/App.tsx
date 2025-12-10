@@ -1,37 +1,29 @@
-import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import {
-  ConnectionProvider,
-  WalletProvider,
-} from "@solana/wallet-adapter-react";
-import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
   TorusWalletAdapter,
-} from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl } from "@solana/web3.js";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+} from '@solana/wallet-adapter-wallets';
+import { clusterApiUrl } from '@solana/web3.js';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import JobList from "./pages/JobList";
-import JobDetail from "./pages/JobDetail";
-import CreateJob from "./pages/CreateJob";
-import Profile from "./pages/Profile";
-import Navbar from "./components/Navbar";
-import PrivateRoute from "./components/PrivateRoute";
-import "./App.css";
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import JobList from './pages/JobList';
+import JobDetail from './pages/JobDetail';
+import CreateJob from './pages/CreateJob';
+import Profile from './pages/Profile';
+import Navbar from './components/Navbar';
+import PrivateRoute from './components/PrivateRoute';
+import './App.css';
 
 // Import wallet adapter styles
-import "@solana/wallet-adapter-react-ui/styles.css";
+import '@solana/wallet-adapter-react-ui/styles.css';
 
 function App() {
   // Set up Solana network connection (devnet for testing)

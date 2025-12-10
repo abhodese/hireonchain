@@ -1,8 +1,8 @@
 const http = require('http');
 
 const data = JSON.stringify({
-  email: "viktortrynovp@gmail.com",
-  password: "IX8FZJ0n!"
+  email: 'viktortrynovp@gmail.com',
+  password: 'IX8FZJ0n!',
 });
 
 const options = {
@@ -12,20 +12,20 @@ const options = {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Content-Length': data.length
-  }
+    'Content-Length': data.length,
+  },
 };
 
-const req = http.request(options, (res) => {
+const req = http.request(options, res => {
   let body = '';
-  res.on('data', (chunk) => body += chunk);
+  res.on('data', chunk => (body += chunk));
   res.on('end', () => {
     console.log('Status:', res.statusCode);
     console.log('Response:', body);
   });
 });
 
-req.on('error', (error) => {
+req.on('error', error => {
   console.error('Error:', error);
 });
 

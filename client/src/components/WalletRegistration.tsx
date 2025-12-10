@@ -1,23 +1,21 @@
-import React, { FC, useEffect, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import React, { FC, useEffect, useState } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 interface WalletRegistrationProps {
   onWalletConnected: (walletAddress: string) => void;
 }
 
-const WalletRegistration: FC<WalletRegistrationProps> = ({
-  onWalletConnected,
-}) => {
+const WalletRegistration: FC<WalletRegistrationProps> = ({ onWalletConnected }) => {
   const { publicKey, connected, wallet } = useWallet();
-  const [walletAddress, setWalletAddress] = useState<string>("");
-  const [error, setError] = useState<string>("");
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (connected && publicKey) {
       const address = publicKey.toString();
       setWalletAddress(address);
-      setError("");
+      setError('');
       onWalletConnected(address);
     }
   }, [connected, publicKey, onWalletConnected]);
@@ -25,13 +23,13 @@ const WalletRegistration: FC<WalletRegistrationProps> = ({
   // Add listener for wallet connection errors
   useEffect(() => {
     const handleError = (error: any) => {
-      console.error("Phantom connection error:", error);
-      setError("Failed to connect wallet. Make sure Phantom is installed and enabled.");
+      console.error('Phantom connection error:', error);
+      setError('Failed to connect wallet. Make sure Phantom is installed and enabled.');
     };
 
-    window.addEventListener("phantom_connect_error", handleError);
+    window.addEventListener('phantom_connect_error', handleError);
     return () => {
-      window.removeEventListener("phantom_connect_error", handleError);
+      window.removeEventListener('phantom_connect_error', handleError);
     };
   }, []);
 
@@ -53,8 +51,8 @@ const WalletRegistration: FC<WalletRegistrationProps> = ({
       {connected && wallet && (
         <div className="wallet-status connected">
           <p>
-            <span className="success-icon">✓</span> Wallet connected:{" "}
-            {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+            <span className="success-icon">✓</span> Wallet connected: {walletAddress.slice(0, 4)}...
+            {walletAddress.slice(-4)}
           </p>
           <p className="text-sm text-gray-600">Using: {wallet.adapter.name}</p>
         </div>
@@ -63,8 +61,7 @@ const WalletRegistration: FC<WalletRegistrationProps> = ({
       {!connected && (
         <div className="wallet-status not-connected">
           <p>
-            <span className="warning-icon">!</span> Please connect your wallet
-            to continue
+            <span className="warning-icon">!</span> Please connect your wallet to continue
           </p>
         </div>
       )}

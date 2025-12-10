@@ -1,23 +1,25 @@
-import React, { FC, useMemo, useState, useEffect } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { LAMPORTS_PER_SOL, Connection, clusterApiUrl } from "@solana/web3.js";
+import React, { FC, useMemo, useState, useEffect } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { LAMPORTS_PER_SOL, Connection, clusterApiUrl } from '@solana/web3.js';
+import bs58 from 'bs58';
 
 const WalletConnect: FC = () => {
-  const { publicKey, wallet, disconnect, connected } = useWallet();
+  const { publicKey, wallet, disconnect, connected, signMessage } = useWallet();
   const [balance, setBalance] = useState<number | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Get wallet balance
   useEffect(() => {
     const getWalletBalance = async () => {
       if (publicKey) {
         try {
-          const connection = new Connection(clusterApiUrl("devnet"));
+          const connection = new Connection(clusterApiUrl('devnet'));
           const walletBalance = await connection.getBalance(publicKey);
           setBalance(walletBalance);
         } catch (error) {
-          console.error("Error fetching balance:", error);
+          console.error('Error fetching balance:', error);
           setBalance(null);
         }
       } else {
@@ -30,26 +32,80 @@ const WalletConnect: FC = () => {
     }
   }, [publicKey, connected]);
 
+  // Check if wallet supports message signing
+  useEffect(() => {
+    if (connected) {
+      console.log('Wallet supports signMessage:', !!signMessage);
+      if (!signMessage) {
+        console.warn('This wallet does not support message signing');
+      }
+    }
+  }, [connected, signMessage]);
+
   const walletAddress = useMemo(() => {
-    if (!publicKey) return "";
+    if (!publicKey) return '';
     return publicKey.toBase58();
   }, [publicKey]);
 
   const formattedBalance = useMemo(() => {
-    if (balance === null) return "0";
-    return (balance / LAMPORTS_PER_SOL).toLocaleString("en-US", {
+    if (balance === null) return '0';
+    return (balance / LAMPORTS_PER_SOL).toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 6,
     });
   }, [balance]);
 
   const displayAddress = useMemo(() => {
-    if (!walletAddress) return "";
+    if (!walletAddress) return '';
     return `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
   }, [walletAddress]);
 
   const toggleDetails = () => {
     setShowDetails(!showDetails);
+  };
+
+  // Test signature verification
+  const testSignature = async () => {
+    if (!signMessage) {
+      alert('Wallet does not support message signing');
+      return;
+    }
+
+    if (!publicKey) {
+      alert('Wallet not connected');
+      return;
+    }
+
+    setIsVerifying(true);
+
+    try {
+      // Create test message (in production, get this from backend)
+      const message = `Sign this message to verify wallet ownership\nTimestamp: ${Date.now()}`;
+      const encodedMessage = new TextEncoder().encode(message);
+
+      // Request signature from wallet
+      const signature = await signMessage(encodedMessage);
+      const signatureBase58 = bs58.encode(signature);
+
+      console.log('=== Signature Test ===');
+      console.log('Message:', message);
+      console.log('Public Key:', publicKey.toBase58());
+      console.log('Signature:', signatureBase58);
+
+      // TODO: Send to backend for verification
+      // const response = await axios.post('/auth/verify', {
+      //   publicKey: publicKey.toBase58(),
+      //   signature: signatureBase58,
+      //   message: message
+      // });
+
+      alert('Signature created successfully! Check console for details.');
+    } catch (error) {
+      console.error('Signing error:', error);
+      alert('Failed to sign message');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (
@@ -67,9 +123,7 @@ const WalletConnect: FC = () => {
           >
             <span>{displayAddress}</span>
             <svg
-              className={`ml-1 h-4 w-4 transition-transform ${
-                showDetails ? "rotate-180" : ""
-              }`}
+              className={`ml-1 h-4 w-4 transition-transform ${showDetails ? 'rotate-180' : ''}`}
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -99,7 +153,7 @@ const WalletConnect: FC = () => {
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(walletAddress);
-                        alert("Address copied to clipboard!");
+                        alert('Address copied to clipboard!');
                       }}
                       className="ml-2 p-1 text-primary-600 hover:text-primary-700 hover:bg-secondary-100 rounded-md focus:outline-none"
                     >
@@ -122,13 +176,18 @@ const WalletConnect: FC = () => {
                 </div>
 
                 <div className="mb-3">
-                  <span className="block text-xs font-medium text-secondary-500">
-                    Balance
-                  </span>
-                  <span className="block text-sm text-secondary-900">
-                    {formattedBalance} SOL
-                  </span>
+                  <span className="block text-xs font-medium text-secondary-500">Balance</span>
+                  <span className="block text-sm text-secondary-900">{formattedBalance} SOL</span>
                 </div>
+
+                {/* Test signature button */}
+                <button
+                  onClick={testSignature}
+                  disabled={!signMessage || isVerifying}
+                  className="w-full mb-2 bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-300 text-white rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none"
+                >
+                  {isVerifying ? 'Signing...' : 'Test Signature'}
+                </button>
 
                 <button
                   onClick={() => disconnect?.()}

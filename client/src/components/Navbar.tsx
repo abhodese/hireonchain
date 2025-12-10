@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
-import WalletConnect from "./WalletConnect";
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
+import WalletConnect from './WalletConnect';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -10,33 +10,33 @@ const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
   }, []);
 
   // Listen for storage changes (when token is added/removed)
   useEffect(() => {
     const handleStorageChange = () => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
       setIsLoggedIn(!!token);
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("auth-change", handleStorageChange);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('auth-change', handleStorageChange);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("auth-change", handleStorageChange);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-change', handleStorageChange);
     };
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userInfo");
+    localStorage.removeItem('token');
+    localStorage.removeItem('userInfo');
     setIsLoggedIn(false);
     // Dispatch custom event to notify all listeners
-    window.dispatchEvent(new Event("auth-change"));
-    navigate("/login");
+    window.dispatchEvent(new Event('auth-change'));
+    navigate('/login');
   };
 
   const toggleMobileMenu = () => {
@@ -49,9 +49,7 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <span className="text-primary-600 font-bold text-xl">
-                Solana Freelance
-              </span>
+              <span className="text-primary-600 font-bold text-xl">Solana Freelance</span>
             </Link>
           </div>
 
@@ -120,7 +118,7 @@ const Navbar: React.FC = () => {
               className="inline-flex items-center justify-center p-2 rounded-md text-secondary-400 hover:text-primary-600 hover:bg-secondary-100 focus:outline-none"
             >
               <svg
-                className={`${isMobileMenuOpen ? "hidden" : "block"} h-6 w-6`}
+                className={`${isMobileMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -134,7 +132,7 @@ const Navbar: React.FC = () => {
                 />
               </svg>
               <svg
-                className={`${isMobileMenuOpen ? "block" : "hidden"} h-6 w-6`}
+                className={`${isMobileMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -153,7 +151,7 @@ const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile menu */}
-      <div className={`${isMobileMenuOpen ? "block" : "hidden"} md:hidden`}>
+      <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:hidden`}>
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
           <Link
             to="/"

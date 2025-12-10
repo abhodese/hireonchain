@@ -257,21 +257,20 @@ module.exports = {
 };
 */
 
-const User = require("../models/User");
-const { generateToken } = require("../utils/auth");
-const { isValidSolanaAddress } = require("../utils/solana");
+const User = require('../models/User');
+const { generateToken } = require('../utils/auth');
+const { isValidSolanaAddress } = require('../utils/solana');
 
 // @desc    Register a new user
 // @route   POST /api/users
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password, walletAddress, role, skills, bio } =
-      req.body;
+    const { username, email, password, walletAddress, role, skills, bio } = req.body;
 
     // Wallet validation
     if (!isValidSolanaAddress(walletAddress)) {
-      return res.status(400).json({ message: "Invalid Solana wallet address" });
+      return res.status(400).json({ message: 'Invalid Solana wallet address' });
     }
 
     // Check duplicates
@@ -280,7 +279,7 @@ const registerUser = async (req, res) => {
     });
 
     if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: 'User already exists' });
     }
 
     // Create user
@@ -291,7 +290,7 @@ const registerUser = async (req, res) => {
       walletAddress,
       role,
       skills: skills || [],
-      bio: bio || "",
+      bio: bio || '',
     });
 
     return res.status(201).json({
@@ -304,11 +303,10 @@ const registerUser = async (req, res) => {
       bio: user.bio,
       token: generateToken(user._id),
     });
-
   } catch (error) {
-    console.error("REGISTER ERROR:", error);
+    console.error('REGISTER ERROR:', error);
     return res.status(500).json({
-      message: "Server error",
+      message: 'Server error',
       error: error.message,
       stack: error.stack,
     });
@@ -323,18 +321,18 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     // Find user & include password
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select('+password');
 
     // If no user in DB → send generic auth error
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     // Compare passwords
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     return res.json({
@@ -347,11 +345,10 @@ const loginUser = async (req, res) => {
       bio: user.bio,
       token: generateToken(user._id),
     });
-
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
+    console.error('LOGIN ERROR:', error);
     return res.status(500).json({
-      message: "Server error",
+      message: 'Server error',
       error: error.message,
       stack: error.stack,
     });
@@ -365,7 +362,7 @@ const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     return res.json({
       _id: user._id,
@@ -378,10 +375,9 @@ const getUserProfile = async (req, res) => {
       rating: user.rating,
       reviews: user.reviews,
     });
-
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -392,7 +388,7 @@ const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     user.username = req.body.username || user.username;
     user.email = req.body.email || user.email;
@@ -407,7 +403,7 @@ const updateUserProfile = async (req, res) => {
     // Change wallet
     if (req.body.walletAddress) {
       if (!isValidSolanaAddress(req.body.walletAddress)) {
-        return res.status(400).json({ message: "Invalid Solana wallet address" });
+        return res.status(400).json({ message: 'Invalid Solana wallet address' });
       }
       user.walletAddress = req.body.walletAddress;
     }
@@ -424,10 +420,9 @@ const updateUserProfile = async (req, res) => {
       bio: updatedUser.bio,
       token: generateToken(updatedUser._id),
     });
-
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -436,15 +431,14 @@ const updateUserProfile = async (req, res) => {
 // @access  Private
 const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    const user = await User.findById(req.params.id).select('-password');
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     return res.json(user);
-
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -453,12 +447,11 @@ const getUserById = async (req, res) => {
 // @access  Public
 const getFreelancers = async (req, res) => {
   try {
-    const freelancers = await User.find({ role: "freelancer" }).select("-password");
+    const freelancers = await User.find({ role: 'freelancer' }).select('-password');
     return res.json(freelancers);
-
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -471,20 +464,18 @@ const addUserReview = async (req, res) => {
 
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({
-        message: "Please provide a rating between 1 and 5",
+        message: 'Please provide a rating between 1 and 5',
       });
     }
 
     const user = await User.findById(req.params.id);
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const alreadyReviewed = user.reviews.find(
-      (r) => r.from.toString() === req.user._id.toString()
-    );
+    const alreadyReviewed = user.reviews.find(r => r.from.toString() === req.user._id.toString());
 
     if (alreadyReviewed) {
-      return res.status(400).json({ message: "User already reviewed" });
+      return res.status(400).json({ message: 'User already reviewed' });
     }
 
     const review = {
@@ -496,19 +487,15 @@ const addUserReview = async (req, res) => {
     user.reviews.push(review);
 
     // Recalculate rating
-    const totalRatings = user.reviews.reduce(
-      (acc, item) => acc + item.rating,
-      0
-    );
+    const totalRatings = user.reviews.reduce((acc, item) => acc + item.rating, 0);
     user.rating = totalRatings / user.reviews.length;
 
     await user.save();
 
-    return res.status(201).json({ message: "Review added" });
-
+    return res.status(201).json({ message: 'Review added' });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 

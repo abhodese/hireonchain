@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import api from "../utils/api";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import api from '../utils/api';
 
 interface Job {
   _id: string;
@@ -24,26 +24,24 @@ const JobList: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    minPrice: "",
-    maxPrice: "",
-    status: "open",
+    minPrice: '',
+    maxPrice: '',
+    status: 'open',
   });
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await api.get("/api/jobs");
+        const response = await api.get('/api/jobs');
         setJobs(response.data);
         // Initially show only open jobs
-        setFilteredJobs(
-          response.data.filter((job: Job) => job.status === "open")
-        );
+        setFilteredJobs(response.data.filter((job: Job) => job.status === 'open'));
       } catch (error) {
-        console.error("Error fetching jobs:", error);
-        setError("Failed to load jobs");
+        console.error('Error fetching jobs:', error);
+        setError('Failed to load jobs');
       } finally {
         setLoading(false);
       }
@@ -57,30 +55,26 @@ const JobList: React.FC = () => {
     let result = jobs;
 
     // Filter by status
-    if (filters.status !== "all") {
-      result = result.filter((job) => job.status === filters.status);
+    if (filters.status !== 'all') {
+      result = result.filter(job => job.status === filters.status);
     }
 
     // Filter by price range
     if (filters.minPrice) {
-      result = result.filter(
-        (job) => job.price >= parseFloat(filters.minPrice)
-      );
+      result = result.filter(job => job.price >= parseFloat(filters.minPrice));
     }
     if (filters.maxPrice) {
-      result = result.filter(
-        (job) => job.price <= parseFloat(filters.maxPrice)
-      );
+      result = result.filter(job => job.price <= parseFloat(filters.maxPrice));
     }
 
     // Apply search term to title, description, and skills
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
-        (job) =>
+        job =>
           job.title.toLowerCase().includes(term) ||
           job.description.toLowerCase().includes(term) ||
-          job.skills.some((skill) => skill.toLowerCase().includes(term))
+          job.skills.some(skill => skill.toLowerCase().includes(term))
       );
     }
 
@@ -91,9 +85,7 @@ const JobList: React.FC = () => {
     setSearchTerm(e.target.value);
   };
 
-  const handleFilterChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFilters({
       ...filters,
@@ -136,12 +128,7 @@ const JobList: React.FC = () => {
         <div className="filters">
           <div className="filter-group">
             <label htmlFor="status">Status:</label>
-            <select
-              id="status"
-              name="status"
-              value={filters.status}
-              onChange={handleFilterChange}
-            >
+            <select id="status" name="status" value={filters.status} onChange={handleFilterChange}>
               <option value="all">All Jobs</option>
               <option value="open">Open Jobs</option>
               <option value="in_progress">In Progress</option>
@@ -183,15 +170,13 @@ const JobList: React.FC = () => {
         </div>
       ) : (
         <div className="jobs-grid">
-          {filteredJobs.map((job) => (
+          {filteredJobs.map(job => (
             <div key={job._id} className="job-card">
               <h2 className="job-title">{job.title}</h2>
 
               <div className="job-meta">
                 <span className="job-price">{job.price} SOL</span>
-                <span className={`job-status status-${job.status}`}>
-                  {job.status}
-                </span>
+                <span className={`job-status status-${job.status}`}>{job.status}</span>
               </div>
 
               <p className="job-description">
@@ -209,12 +194,8 @@ const JobList: React.FC = () => {
               </div>
 
               <div className="job-footer">
-                <span className="job-client">
-                  Posted by: {job.client.username}
-                </span>
-                <span className="job-proposals">
-                  Proposals: {job.proposals.length}
-                </span>
+                <span className="job-client">Posted by: {job.client.username}</span>
+                <span className="job-proposals">Proposals: {job.proposals.length}</span>
               </div>
 
               <Link to={`/jobs/${job._id}`} className="view-job-btn">

@@ -1,7 +1,7 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 const Home: React.FC = () => {
   const { connected } = useWallet();
@@ -19,8 +19,8 @@ const Home: React.FC = () => {
           </h2>
 
           <p className="text-lg text-secondary-600 mb-10 leading-relaxed">
-            A decentralized freelance marketplace powered by Solana blockchain.
-            Find work, hire talent, and make secure payments with SOL.
+            A decentralized freelance marketplace powered by Solana blockchain. Find work, hire
+            talent, and make secure payments with SOL.
           </p>
 
           <div className="mt-10 flex flex-col items-center">
@@ -38,10 +38,7 @@ const Home: React.FC = () => {
                 <Link to="/jobs" className="btn-primary py-3 px-8 text-base">
                   Browse Jobs
                 </Link>
-                <Link
-                  to="/register"
-                  className="btn-secondary py-3 px-8 text-base"
-                >
+                <Link to="/register" className="btn-secondary py-3 px-8 text-base">
                   Create Account
                 </Link>
               </div>
@@ -89,13 +86,10 @@ const Home: React.FC = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-2">
-                Secure Payments
-              </h3>
+              <h3 className="text-xl font-semibold text-secondary-900 mb-2">Secure Payments</h3>
               <p className="text-secondary-600">
-                All payments are secured through Solana blockchain escrow
-                contracts, ensuring freelancers get paid and clients get quality
-                work.
+                All payments are secured through Solana blockchain escrow contracts, ensuring
+                freelancers get paid and clients get quality work.
               </p>
             </div>
 
@@ -123,12 +117,10 @@ const Home: React.FC = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-2">
-                Low Fees
-              </h3>
+              <h3 className="text-xl font-semibold text-secondary-900 mb-2">Low Fees</h3>
               <p className="text-secondary-600">
-                Benefit from Solana's ultra-low transaction fees, saving money
-                on every payment compared to traditional platforms.
+                Benefit from Solana's ultra-low transaction fees, saving money on every payment
+                compared to traditional platforms.
               </p>
             </div>
 
@@ -149,12 +141,10 @@ const Home: React.FC = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-2">
-                Fast Transactions
-              </h3>
+              <h3 className="text-xl font-semibold text-secondary-900 mb-2">Fast Transactions</h3>
               <p className="text-secondary-600">
-                Solana's high-speed blockchain ensures payments are processed
-                within seconds, not days like traditional payment methods.
+                Solana's high-speed blockchain ensures payments are processed within seconds, not
+                days like traditional payment methods.
               </p>
             </div>
 
@@ -189,12 +179,10 @@ const Home: React.FC = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-2">
-                Global Access
-              </h3>
+              <h3 className="text-xl font-semibold text-secondary-900 mb-2">Global Access</h3>
               <p className="text-secondary-600">
-                Work with clients and freelancers from around the world without
-                currency conversion or international transfer fees.
+                Work with clients and freelancers from around the world without currency conversion
+                or international transfer fees.
               </p>
             </div>
           </div>
@@ -204,18 +192,14 @@ const Home: React.FC = () => {
       {/* How It Works Section */}
       <div className="py-16 bg-secondary-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-secondary-900 mb-12">
-            How It Works
-          </h2>
+          <h2 className="text-3xl font-bold text-center text-secondary-900 mb-12">How It Works</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="flex flex-col items-center text-center">
               <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xl">
                 1
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-2">
-                Connect Wallet
-              </h3>
+              <h3 className="text-xl font-semibold text-secondary-900 mb-2">Connect Wallet</h3>
               <p className="text-secondary-600">
                 Connect your Phantom wallet to access the platform
               </p>
@@ -225,9 +209,7 @@ const Home: React.FC = () => {
               <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xl">
                 2
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-2">
-                Create Profile
-              </h3>
+              <h3 className="text-xl font-semibold text-secondary-900 mb-2">Create Profile</h3>
               <p className="text-secondary-600">
                 Register as a client or freelancer with your skills
               </p>
@@ -237,21 +219,15 @@ const Home: React.FC = () => {
               <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xl">
                 3
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-2">
-                Post or Find Jobs
-              </h3>
-              <p className="text-secondary-600">
-                Post new projects or browse available jobs
-              </p>
+              <h3 className="text-xl font-semibold text-secondary-900 mb-2">Post or Find Jobs</h3>
+              <p className="text-secondary-600">Post new projects or browse available jobs</p>
             </div>
 
             <div className="flex flex-col items-center text-center">
               <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xl">
                 4
               </div>
-              <h3 className="text-xl font-semibold text-secondary-900 mb-2">
-                Secure Payments
-              </h3>
+              <h3 className="text-xl font-semibold text-secondary-900 mb-2">Secure Payments</h3>
               <p className="text-secondary-600">
                 Fund contracts with escrow and release payment on completion
               </p>

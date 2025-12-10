@@ -19,6 +19,7 @@
     "assert": "^2.1.0",
     "axios": "^1.6.2",
     "babel-preset-react-app": "^10.1.0",
+    "bs58": "^6.0.0",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
     "execp": "^0.0.1",
@@ -42,10 +43,12 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
+    "@types/bs58": "^4.0.4",
     "ajv": "8.12.0",
     "ajv-keywords": "5.1.0",
     "events": "^3.3.0",
     "html-webpack-plugin": "5.5.3",
+    "prettier": "^3.7.4",
     "util": "^0.12.5",
     "webpack": "5.89.0",
     "webpack-cli": "4.10.0",
@@ -55,7 +58,8 @@
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "format": "prettier --write ./src"
   },
   "eslintConfig": {
     "extends": [

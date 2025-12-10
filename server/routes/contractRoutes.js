@@ -1,4 +1,4 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
 
 const {
@@ -7,23 +7,23 @@ const {
   getContractById,
   updateContractStatus,
   disputeContract,
-} = require("../controllers/contractController");
+} = require('../controllers/contractController');
 
-const { protect } = require("../middleware/authMiddleware");
+const { protect } = require('../middleware/authMiddleware');
 
 // Create a new contract
-router.post("/", protect, createContract);
+router.post('/', protect, createContract);
 
 // Get all contracts for the current user
-router.get("/", protect, getContracts);
+router.get('/', protect, getContracts);
 
 // Get contract by ID
-router.get("/:id", protect, getContractById);
+router.get('/:id', protect, getContractById);
 
 // Update contract status
-router.put("/:id/status", protect, updateContractStatus);
+router.put('/:id/status', protect, updateContractStatus);
 
 // Dispute a contract
-router.post("/:id/dispute", protect, disputeContract);
+router.post('/:id/dispute', protect, disputeContract);
 
 module.exports = router;

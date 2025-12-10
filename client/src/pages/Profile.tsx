@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { getBalance } from "../utils/solana";
-import api from "../utils/api";
+import React, { useState, useEffect } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { getBalance } from '../utils/solana';
+import api from '../utils/api';
 
 interface UserProfile {
   _id: string;
@@ -29,33 +29,33 @@ const Profile: React.FC = () => {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    bio: "",
-    skills: "",
+    username: '',
+    email: '',
+    bio: '',
+    skills: '',
   });
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get("/api/users/profile");
+        const response = await api.get('/api/users/profile');
         setProfile(response.data);
 
         // Set initial form data
         setFormData({
           username: response.data.username,
           email: response.data.email,
-          bio: response.data.bio || "",
-          skills: response.data.skills ? response.data.skills.join(", ") : "",
+          bio: response.data.bio || '',
+          skills: response.data.skills ? response.data.skills.join(', ') : '',
         });
       } catch (error) {
-        console.error("Error fetching profile:", error);
-        setError("Failed to load profile");
+        console.error('Error fetching profile:', error);
+        setError('Failed to load profile');
       } finally {
         setLoading(false);
       }
@@ -72,7 +72,7 @@ const Profile: React.FC = () => {
           const solBalance = await getBalance(publicKey.toString());
           setBalance(solBalance);
         } catch (error) {
-          console.error("Error fetching balance:", error);
+          console.error('Error fetching balance:', error);
         }
       }
     };
@@ -80,9 +80,7 @@ const Profile: React.FC = () => {
     fetchBalance();
   }, [connected, publicKey]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -99,22 +97,20 @@ const Profile: React.FC = () => {
         username: formData.username,
         email: formData.email,
         bio: formData.bio,
-        skills: formData.skills
-          ? formData.skills.split(",").map((skill) => skill.trim())
-          : [],
+        skills: formData.skills ? formData.skills.split(',').map(skill => skill.trim()) : [],
       };
 
       // Update profile
-      const response = await api.put("/api/users/profile", updateData);
+      const response = await api.put('/api/users/profile', updateData);
 
       // Update local state
       setProfile(response.data);
       setEditMode(false);
 
       // Update user info in localStorage
-      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
       localStorage.setItem(
-        "userInfo",
+        'userInfo',
         JSON.stringify({
           ...userInfo,
           username: response.data.username,
@@ -122,8 +118,8 @@ const Profile: React.FC = () => {
         })
       );
     } catch (error) {
-      console.error("Error updating profile:", error);
-      alert("Failed to update profile");
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile');
     }
   };
 
@@ -132,9 +128,7 @@ const Profile: React.FC = () => {
   }
 
   if (error || !profile) {
-    return (
-      <div className="error-message">{error || "Failed to load profile"}</div>
-    );
+    return <div className="error-message">{error || 'Failed to load profile'}</div>;
   }
 
   return (
@@ -168,9 +162,7 @@ const Profile: React.FC = () => {
                 {publicKey.toString() === profile.walletAddress ? (
                   <span className="connected-status">✓ Wallet connected</span>
                 ) : (
-                  <span className="warning-status">
-                    ⚠️ Connected wallet doesn't match profile
-                  </span>
+                  <span className="warning-status">⚠️ Connected wallet doesn't match profile</span>
                 )}
               </div>
             )}
@@ -184,21 +176,17 @@ const Profile: React.FC = () => {
 
           <div className="account-info">
             <h2>Account Type</h2>
-            <div className="role-badge">
-              {profile.role === "client" ? "Client" : "Freelancer"}
-            </div>
+            <div className="role-badge">{profile.role === 'client' ? 'Client' : 'Freelancer'}</div>
 
-            {profile.role === "freelancer" && (
+            {profile.role === 'freelancer' && (
               <div className="rating-section">
                 <h3>Rating</h3>
                 <div className="rating">
                   <span className="stars">
-                    {"★".repeat(Math.round(profile.rating))}
-                    {"☆".repeat(5 - Math.round(profile.rating))}
+                    {'★'.repeat(Math.round(profile.rating))}
+                    {'☆'.repeat(5 - Math.round(profile.rating))}
                   </span>
-                  <span className="rating-value">
-                    ({profile.rating.toFixed(1)})
-                  </span>
+                  <span className="rating-value">({profile.rating.toFixed(1)})</span>
                 </div>
               </div>
             )}
@@ -243,7 +231,7 @@ const Profile: React.FC = () => {
                 />
               </div>
 
-              {profile.role === "freelancer" && (
+              {profile.role === 'freelancer' && (
                 <div className="form-group">
                   <label htmlFor="skills">Skills (comma-separated)</label>
                   <input
@@ -260,11 +248,7 @@ const Profile: React.FC = () => {
                 <button type="submit" className="save-btn">
                   Save Changes
                 </button>
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={() => setEditMode(false)}
-                >
+                <button type="button" className="cancel-btn" onClick={() => setEditMode(false)}>
                   Cancel
                 </button>
               </div>
@@ -289,7 +273,7 @@ const Profile: React.FC = () => {
                 )}
               </div>
 
-              {profile.role === "freelancer" && profile.skills.length > 0 && (
+              {profile.role === 'freelancer' && profile.skills.length > 0 && (
                 <div className="profile-section">
                   <h2>Skills</h2>
                   <div className="skills-list">
@@ -302,29 +286,24 @@ const Profile: React.FC = () => {
                 </div>
               )}
 
-              <button
-                onClick={() => setEditMode(true)}
-                className="edit-profile-btn"
-              >
+              <button onClick={() => setEditMode(true)} className="edit-profile-btn">
                 Edit Profile
               </button>
             </div>
           )}
 
           {/* Reviews section for freelancers */}
-          {profile.role === "freelancer" && profile.reviews.length > 0 && (
+          {profile.role === 'freelancer' && profile.reviews.length > 0 && (
             <div className="reviews-section">
               <h2>Reviews ({profile.reviews.length})</h2>
               <div className="reviews-list">
                 {profile.reviews.map((review, index) => (
                   <div key={index} className="review-card">
                     <div className="review-header">
-                      <span className="reviewer-name">
-                        {review.from.username}
-                      </span>
+                      <span className="reviewer-name">{review.from.username}</span>
                       <span className="review-rating">
-                        {"★".repeat(review.rating)}
-                        {"☆".repeat(5 - review.rating)}
+                        {'★'.repeat(review.rating)}
+                        {'☆'.repeat(5 - review.rating)}
                       </span>
                     </div>
                     <p className="review-content">{review.content}</p>

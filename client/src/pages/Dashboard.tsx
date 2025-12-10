@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
-import api from "../utils/api";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
+import api from '../utils/api';
 
 interface Job {
   _id: string;
@@ -36,36 +36,36 @@ interface Contract {
 
 const Dashboard: React.FC = () => {
   const { publicKey } = useWallet();
-  const [userRole, setUserRole] = useState<string>("");
+  const [userRole, setUserRole] = useState<string>('');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userInfoStr = localStorage.getItem("userInfo");
+        const userInfoStr = localStorage.getItem('userInfo');
         if (userInfoStr) {
           const userInfo = JSON.parse(userInfoStr);
           setUserRole(userInfo.role);
 
           // Fetch appropriate jobs based on role
           let jobsResponse;
-          if (userInfo.role === "client") {
-            jobsResponse = await api.get("/api/jobs/client/jobs");
+          if (userInfo.role === 'client') {
+            jobsResponse = await api.get('/api/jobs/client/jobs');
           } else {
-            jobsResponse = await api.get("/api/jobs/freelancer/jobs");
+            jobsResponse = await api.get('/api/jobs/freelancer/jobs');
           }
           setJobs(jobsResponse.data);
 
           // Fetch contracts
-          const contractsResponse = await api.get("/api/contracts");
+          const contractsResponse = await api.get('/api/contracts');
           setContracts(contractsResponse.data);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Failed to load dashboard data");
+        console.error('Error fetching data:', error);
+        setError('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
@@ -98,9 +98,7 @@ const Dashboard: React.FC = () => {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          <span className="text-lg font-medium text-secondary-700">
-            Loading dashboard...
-          </span>
+          <span className="text-lg font-medium text-secondary-700">Loading dashboard...</span>
         </div>
       </div>
     );
@@ -133,10 +131,10 @@ const Dashboard: React.FC = () => {
 
   // Status badge colors mapping
   const statusColors = {
-    open: "bg-blue-100 text-blue-800",
-    in_progress: "bg-yellow-100 text-yellow-800",
-    completed: "bg-green-100 text-green-800",
-    cancelled: "bg-red-100 text-red-800",
+    open: 'bg-blue-100 text-blue-800',
+    in_progress: 'bg-yellow-100 text-yellow-800',
+    completed: 'bg-green-100 text-green-800',
+    cancelled: 'bg-red-100 text-red-800',
   };
 
   return (
@@ -147,7 +145,7 @@ const Dashboard: React.FC = () => {
             <h1 className="text-3xl font-bold text-secondary-900">Dashboard</h1>
             {publicKey && (
               <div className="mt-2 text-sm text-secondary-600">
-                Connected wallet:{" "}
+                Connected wallet:{' '}
                 <span className="font-medium">
                   {publicKey.toString().slice(0, 4)}...
                   {publicKey.toString().slice(-4)}
@@ -157,7 +155,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            {userRole === "client" && (
+            {userRole === 'client' && (
               <Link to="/create-job" className="btn-primary">
                 Post a New Job
               </Link>
@@ -172,7 +170,7 @@ const Dashboard: React.FC = () => {
           {/* Jobs Section */}
           <div className="card">
             <h2 className="text-xl font-bold text-secondary-900 mb-4">
-              {userRole === "client" ? "Your Posted Jobs" : "Your Jobs"}
+              {userRole === 'client' ? 'Your Posted Jobs' : 'Your Jobs'}
             </h2>
 
             {jobs.length === 0 ? (
@@ -194,24 +192,21 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {jobs.map((job) => (
+                {jobs.map(job => (
                   <div
                     key={job._id}
                     className="border border-secondary-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow"
                   >
                     <div className="p-4">
                       <div className="flex justify-between items-start">
-                        <h3 className="text-lg font-semibold text-secondary-900">
-                          {job.title}
-                        </h3>
+                        <h3 className="text-lg font-semibold text-secondary-900">{job.title}</h3>
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            statusColors[
-                              job.status as keyof typeof statusColors
-                            ] || "bg-secondary-100 text-secondary-800"
+                            statusColors[job.status as keyof typeof statusColors] ||
+                            'bg-secondary-100 text-secondary-800'
                           }`}
                         >
-                          {job.status.replace("_", " ")}
+                          {job.status.replace('_', ' ')}
                         </span>
                       </div>
 
@@ -251,8 +246,7 @@ const Dashboard: React.FC = () => {
                               />
                             </svg>
                             <span>
-                              <strong>Freelancer:</strong>{" "}
-                              {job.assignedTo.username}
+                              <strong>Freelancer:</strong> {job.assignedTo.username}
                             </span>
                           </p>
                         )}
@@ -288,9 +282,7 @@ const Dashboard: React.FC = () => {
 
           {/* Contracts Section */}
           <div className="card">
-            <h2 className="text-xl font-bold text-secondary-900 mb-4">
-              Your Contracts
-            </h2>
+            <h2 className="text-xl font-bold text-secondary-900 mb-4">Your Contracts</h2>
 
             {contracts.length === 0 ? (
               <div className="bg-secondary-50 rounded-lg p-6 text-center">
@@ -311,7 +303,7 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {contracts.map((contract) => (
+                {contracts.map(contract => (
                   <div
                     key={contract._id}
                     className="border border-secondary-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow"
@@ -323,12 +315,11 @@ const Dashboard: React.FC = () => {
                         </h3>
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            statusColors[
-                              contract.status as keyof typeof statusColors
-                            ] || "bg-secondary-100 text-secondary-800"
+                            statusColors[contract.status as keyof typeof statusColors] ||
+                            'bg-secondary-100 text-secondary-800'
                           }`}
                         >
-                          {contract.status.replace("_", " ")}
+                          {contract.status.replace('_', ' ')}
                         </span>
                       </div>
 
@@ -367,10 +358,8 @@ const Dashboard: React.FC = () => {
                             />
                           </svg>
                           <span>
-                            <strong>
-                              {userRole === "client" ? "Freelancer" : "Client"}:
-                            </strong>{" "}
-                            {userRole === "client"
+                            <strong>{userRole === 'client' ? 'Freelancer' : 'Client'}:</strong>{' '}
+                            {userRole === 'client'
                               ? contract.freelancer.username
                               : contract.client.username}
                           </span>
@@ -391,8 +380,7 @@ const Dashboard: React.FC = () => {
                             />
                           </svg>
                           <span className="text-xs truncate">
-                            <strong>Contract:</strong>{" "}
-                            {contract.contractAddress.slice(0, 12)}...
+                            <strong>Contract:</strong> {contract.contractAddress.slice(0, 12)}...
                           </span>
                         </p>
                       </div>

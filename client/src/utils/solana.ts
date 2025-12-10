@@ -8,20 +8,20 @@ import {
   Cluster,
   TransactionInstruction,
   Keypair,
-} from "@solana/web3.js";
-import { WalletContextState } from "@solana/wallet-adapter-react";
+} from '@solana/web3.js';
+import { WalletContextState } from '@solana/wallet-adapter-react';
 
 // Create a connection to the Solana blockchain
 export const getSolanaConnection = () => {
-  const network = (process.env.REACT_APP_SOLANA_NETWORK || "devnet") as Cluster;
-  return new Connection(clusterApiUrl(network), "confirmed");
+  const network = (process.env.REACT_APP_SOLANA_NETWORK || 'devnet') as Cluster;
+  return new Connection(clusterApiUrl(network), 'confirmed');
 };
 
 // Get the escrow program ID
 export const getEscrowProgramId = () => {
   const programId = process.env.REACT_APP_ESCROW_PROGRAM_ID;
   if (!programId) {
-    throw new Error("Escrow program ID not found in environment variables");
+    throw new Error('Escrow program ID not found in environment variables');
   }
   return new PublicKey(programId);
 };
@@ -34,7 +34,7 @@ export const createEscrowAccount = async (
 ) => {
   try {
     if (!wallet.publicKey || !wallet.signTransaction) {
-      throw new Error("Wallet not connected");
+      throw new Error('Wallet not connected');
     }
 
     const connection = getSolanaConnection();
@@ -77,12 +77,10 @@ export const createEscrowAccount = async (
     signedTransaction.partialSign(escrowAccount);
 
     // Send transaction
-    const signature = await connection.sendRawTransaction(
-      signedTransaction.serialize()
-    );
+    const signature = await connection.sendRawTransaction(signedTransaction.serialize());
 
     // Confirm transaction
-    await connection.confirmTransaction(signature, "confirmed");
+    await connection.confirmTransaction(signature, 'confirmed');
 
     return {
       success: true,
@@ -90,7 +88,7 @@ export const createEscrowAccount = async (
       escrowAccount: escrowAccount.publicKey.toString(),
     };
   } catch (error) {
-    console.error("Transaction error:", error);
+    console.error('Transaction error:', error);
     return { success: false, error: (error as Error).message };
   }
 };
@@ -103,7 +101,7 @@ export const releaseEscrow = async (
 ) => {
   try {
     if (!wallet.publicKey || !wallet.signTransaction) {
-      throw new Error("Wallet not connected");
+      throw new Error('Wallet not connected');
     }
 
     const connection = getSolanaConnection();
@@ -137,16 +135,14 @@ export const releaseEscrow = async (
     const signedTransaction = await wallet.signTransaction(transaction);
 
     // Send transaction
-    const signature = await connection.sendRawTransaction(
-      signedTransaction.serialize()
-    );
+    const signature = await connection.sendRawTransaction(signedTransaction.serialize());
 
     // Confirm transaction
-    await connection.confirmTransaction(signature, "confirmed");
+    await connection.confirmTransaction(signature, 'confirmed');
 
     return { success: true, signature };
   } catch (error) {
-    console.error("Transaction error:", error);
+    console.error('Transaction error:', error);
     return { success: false, error: (error as Error).message };
   }
 };
@@ -159,7 +155,7 @@ export const getBalance = async (address: string) => {
     const balance = await connection.getBalance(publicKey);
     return balance / LAMPORTS_PER_SOL;
   } catch (error) {
-    console.error("Error getting balance:", error);
+    console.error('Error getting balance:', error);
     return 0;
   }
 };
@@ -171,7 +167,7 @@ export const verifyTransaction = async (signature: string) => {
     const transaction = await connection.getTransaction(signature);
     return transaction;
   } catch (error) {
-    console.error("Error verifying transaction:", error);
+    console.error('Error verifying transaction:', error);
     return null;
   }
 };

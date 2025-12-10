@@ -1,6 +1,6 @@
-import React from "react";
-import { Navigate } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -8,7 +8,7 @@ interface PrivateRouteProps {
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   const { connected } = useWallet();
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
 
   // Require both JWT token and wallet connection
   if (!token || !connected) {

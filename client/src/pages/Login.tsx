@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import api from "../utils/api";
-import axios from "axios";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import api from '../utils/api';
+import axios from 'axios';
 
 interface FormErrors {
   email?: string;
@@ -16,14 +16,14 @@ const Login: React.FC = () => {
   const { connected, publicKey } = useWallet();
 
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    email: '',
+    password: '',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [walletMessage, setWalletMessage] = useState("");
-  const [apiError, setApiError] = useState("");
+  const [walletMessage, setWalletMessage] = useState('');
+  const [apiError, setApiError] = useState('');
 
   // Check if wallet is connected
   useEffect(() => {
@@ -32,21 +32,21 @@ const Login: React.FC = () => {
         .toString()
         .slice(-4)}`;
       setWalletMessage(`Wallet connected: ${shortAddress}`);
-      setErrors((prev) => ({ ...prev, general: "" }));
+      setErrors(prev => ({ ...prev, general: '' }));
     } else {
-      setWalletMessage("");
+      setWalletMessage('');
     }
   }, [connected, publicKey]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
         [name]: value,
       }));
       if (errors[name as keyof FormErrors]) {
-        setErrors((prev) => ({
+        setErrors(prev => ({
           ...prev,
           [name]: undefined,
         }));
@@ -59,15 +59,15 @@ const Login: React.FC = () => {
     const newErrors: FormErrors = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
+      newErrors.email = 'Please enter a valid email address';
     }
 
     if (!formData.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -77,13 +77,13 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    setApiError("");
+    setApiError('');
     setErrors({});
 
     // Check wallet connection first
     if (!connected || !publicKey) {
       setErrors({
-        general: "Please connect your Solana wallet before logging in",
+        general: 'Please connect your Solana wallet before logging in',
       });
       return;
     }
@@ -96,14 +96,14 @@ const Login: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post("/api/users/login", {
+      const response = await api.post('/api/users/login', {
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
       });
 
       // Validate response structure
       if (!response.data.token || !response.data.walletAddress) {
-        setApiError("Invalid response from server. Please try again.");
+        setApiError('Invalid response from server. Please try again.');
         return;
       }
 
@@ -111,40 +111,37 @@ const Login: React.FC = () => {
       const connectedWallet = publicKey.toString();
       if (response.data.walletAddress !== connectedWallet) {
         setApiError(
-          "The connected wallet does not match your account wallet. Please disconnect and connect the correct wallet."
+          'The connected wallet does not match your account wallet. Please disconnect and connect the correct wallet.'
         );
         return;
       }
 
       // Save authentication data
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("userInfo", JSON.stringify(response.data));
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userInfo', JSON.stringify(response.data));
 
       // Dispatch auth change event for Navbar update
-      window.dispatchEvent(new Event("auth-change"));
+      window.dispatchEvent(new Event('auth-change'));
 
       // Navigate to dashboard
-      navigate("/dashboard", { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error('Login error:', error);
 
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          setApiError("Invalid email or password");
+          setApiError('Invalid email or password');
         } else if (error.response?.status === 404) {
-          setApiError("User not found. Please register first.");
+          setApiError('User not found. Please register first.');
         } else if (error.response?.status === 500) {
-          setApiError("Server error. Please try again later.");
+          setApiError('Server error. Please try again later.');
         } else {
-          setApiError(
-            error.response?.data?.message ||
-              "Login failed. Please try again."
-          );
+          setApiError(error.response?.data?.message || 'Login failed. Please try again.');
         }
       } else if (error instanceof Error) {
-        setApiError(error.message || "An unexpected error occurred");
+        setApiError(error.message || 'An unexpected error occurred');
       } else {
-        setApiError("An unexpected error occurred. Please try again.");
+        setApiError('An unexpected error occurred. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -240,15 +237,11 @@ const Login: React.FC = () => {
                   placeholder="you@example.com"
                   disabled={isSubmitting}
                   className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
-                    errors.email
-                      ? "border-red-300 text-red-900"
-                      : "border-secondary-300"
+                    errors.email ? 'border-red-300 text-red-900' : 'border-secondary-300'
                   }`}
                   autoComplete="email"
                 />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-                )}
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
               </div>
 
               <div>
@@ -267,15 +260,11 @@ const Login: React.FC = () => {
                   placeholder="Enter your password"
                   disabled={isSubmitting}
                   className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
-                    errors.password
-                      ? "border-red-300 text-red-900"
-                      : "border-secondary-300"
+                    errors.password ? 'border-red-300 text-red-900' : 'border-secondary-300'
                   }`}
                   autoComplete="current-password"
                 />
-                {errors.password && (
-                  <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-                )}
+                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
               </div>
 
               <button
@@ -283,8 +272,8 @@ const Login: React.FC = () => {
                 disabled={isSubmitting || !connected}
                 className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center ${
                   connected && !isSubmitting
-                    ? "bg-primary-600 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                    : "bg-secondary-300 text-secondary-500 cursor-not-allowed"
+                    ? 'bg-primary-600 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
+                    : 'bg-secondary-300 text-secondary-500 cursor-not-allowed'
                 }`}
                 aria-busy={isSubmitting}
               >
@@ -320,7 +309,7 @@ const Login: React.FC = () => {
             </form>
 
             <div className="mt-6 text-center text-sm">
-              <span className="text-secondary-600">Don't have an account?</span>{" "}
+              <span className="text-secondary-600">Don't have an account?</span>{' '}
               <Link
                 to="/register"
                 className="font-medium text-primary-600 hover:text-primary-700 focus:outline-none focus:underline"
