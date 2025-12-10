@@ -1,7 +1,7 @@
 {
   "name": "sol-marketplace",
   "version": "1.0.0",
-  "description": "A decentralized job marketplace platform built on Solana blockchain, enabling secure and transparent freelance job postings, bidding, and payments. The platform combines the power of blockchain technology with a modern web interface to create a trustless environment for freelancers and employers.",
+  "description": "A decentralized job marketplace platform built on Solana blockchain.",
   "private": true,
   "scripts": {
     "prepare": "simple-git-hooks"

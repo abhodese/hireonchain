@@ -2,13 +2,11 @@ import React, { FC, useMemo, useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { LAMPORTS_PER_SOL, Connection, clusterApiUrl } from '@solana/web3.js';
-import bs58 from 'bs58';
 
 const WalletConnect: FC = () => {
-  const { publicKey, wallet, disconnect, connected, signMessage } = useWallet();
+  const { publicKey, wallet, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState<number | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
 
   // Get wallet balance
   useEffect(() => {
@@ -32,16 +30,6 @@ const WalletConnect: FC = () => {
     }
   }, [publicKey, connected]);
 
-  // Check if wallet supports message signing
-  useEffect(() => {
-    if (connected) {
-      console.log('Wallet supports signMessage:', !!signMessage);
-      if (!signMessage) {
-        console.warn('This wallet does not support message signing');
-      }
-    }
-  }, [connected, signMessage]);
-
   const walletAddress = useMemo(() => {
     if (!publicKey) return '';
     return publicKey.toBase58();
@@ -62,50 +50,6 @@ const WalletConnect: FC = () => {
 
   const toggleDetails = () => {
     setShowDetails(!showDetails);
-  };
-
-  // Test signature verification
-  const testSignature = async () => {
-    if (!signMessage) {
-      alert('Wallet does not support message signing');
-      return;
-    }
-
-    if (!publicKey) {
-      alert('Wallet not connected');
-      return;
-    }
-
-    setIsVerifying(true);
-
-    try {
-      // Create test message (in production, get this from backend)
-      const message = `Sign this message to verify wallet ownership\nTimestamp: ${Date.now()}`;
-      const encodedMessage = new TextEncoder().encode(message);
-
-      // Request signature from wallet
-      const signature = await signMessage(encodedMessage);
-      const signatureBase58 = bs58.encode(signature);
-
-      console.log('=== Signature Test ===');
-      console.log('Message:', message);
-      console.log('Public Key:', publicKey.toBase58());
-      console.log('Signature:', signatureBase58);
-
-      // TODO: Send to backend for verification
-      // const response = await axios.post('/auth/verify', {
-      //   publicKey: publicKey.toBase58(),
-      //   signature: signatureBase58,
-      //   message: message
-      // });
-
-      alert('Signature created successfully! Check console for details.');
-    } catch (error) {
-      console.error('Signing error:', error);
-      alert('Failed to sign message');
-    } finally {
-      setIsVerifying(false);
-    }
   };
 
   return (
@@ -179,15 +123,6 @@ const WalletConnect: FC = () => {
                   <span className="block text-xs font-medium text-secondary-500">Balance</span>
                   <span className="block text-sm text-secondary-900">{formattedBalance} SOL</span>
                 </div>
-
-                {/* Test signature button */}
-                <button
-                  onClick={testSignature}
-                  disabled={!signMessage || isVerifying}
-                  className="w-full mb-2 bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-300 text-white rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none"
-                >
-                  {isVerifying ? 'Signing...' : 'Test Signature'}
-                </button>
 
                 <button
                   onClick={() => disconnect?.()}

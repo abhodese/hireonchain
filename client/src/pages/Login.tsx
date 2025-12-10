@@ -4,6 +4,8 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import api from '../utils/api';
 import axios from 'axios';
+import { useWalletAuth } from '../hooks/useWalletAuth';
+import { Button } from '@solana/wallet-adapter-react-ui/lib/types/Button';
 
 interface FormErrors {
   email?: string;
@@ -21,9 +23,10 @@ const Login: React.FC = () => {
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [walletMessage, setWalletMessage] = useState('');
   const [apiError, setApiError] = useState('');
+  const { authenticateWallet, isAuthenticating } = useWalletAuth();
+  const [signed, setSigned] = useState(false);
 
   // Check if wallet is connected
   useEffect(() => {
@@ -93,8 +96,6 @@ const Login: React.FC = () => {
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
       const response = await api.post('/api/users/login', {
         email: formData.email.toLowerCase().trim(),
@@ -124,6 +125,7 @@ const Login: React.FC = () => {
       window.dispatchEvent(new Event('auth-change'));
 
       // Navigate to dashboard
+
       navigate('/dashboard', { replace: true });
     } catch (error) {
       console.error('Login error:', error);
@@ -143,8 +145,13 @@ const Login: React.FC = () => {
       } else {
         setApiError('An unexpected error occurred. Please try again.');
       }
-    } finally {
-      setIsSubmitting(false);
+    }
+  };
+
+  const handleAuthenticate = async () => {
+    const success = await authenticateWallet();
+    if (success) {
+      setSigned(true);
     }
   };
 
@@ -171,7 +178,33 @@ const Login: React.FC = () => {
             </p>
 
             <div className="flex justify-center mb-4">
-              <WalletMultiButton className="!bg-primary-600 hover:!bg-primary-700 !rounded-lg !h-12 !text-base !font-medium" />
+              {!connected && (
+                <WalletMultiButton className="!bg-primary-600 hover:!bg-primary-700 !rounded-lg !h-12 !text-base !font-medium" />
+              )}
+
+              {/* Authentication status */}
+              {!signed && connected && (
+                <button
+                  onClick={handleAuthenticate}
+                  disabled={isAuthenticating}
+                  className="w-full mb-2 bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-300 text-white rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none"
+                >
+                  {isAuthenticating ? 'Authenticating...' : 'Verify Wallet'}
+                </button>
+              )}
+
+              {signed && connected && (
+                <div className="mb-2 flex items-center text-sm text-green-600">
+                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Verified
+                </div>
+              )}
             </div>
 
             {walletMessage && (
@@ -235,7 +268,7 @@ const Login: React.FC = () => {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="you@example.com"
-                  disabled={isSubmitting}
+                  disabled={isAuthenticating}
                   className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
                     errors.email ? 'border-red-300 text-red-900' : 'border-secondary-300'
                   }`}
@@ -258,7 +291,7 @@ const Login: React.FC = () => {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
-                  disabled={isSubmitting}
+                  disabled={isAuthenticating}
                   className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
                     errors.password ? 'border-red-300 text-red-900' : 'border-secondary-300'
                   }`}
@@ -269,15 +302,15 @@ const Login: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={isSubmitting || !connected}
+                disabled={isAuthenticating || !connected}
                 className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center ${
-                  connected && !isSubmitting
+                  connected && !isAuthenticating
                     ? 'bg-primary-600 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
                     : 'bg-secondary-300 text-secondary-500 cursor-not-allowed'
                 }`}
-                aria-busy={isSubmitting}
+                aria-busy={isAuthenticating}
               >
-                {isSubmitting ? (
+                {isAuthenticating ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"

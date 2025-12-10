@@ -16,6 +16,7 @@
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/web3.js": "^1.88.0",
     "bcryptjs": "^2.4.3",
+    "bs58": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "execp": "^0.0.1",
@@ -27,7 +28,8 @@
     "mongoose": "^8.0.0",
     "path": "^0.12.7",
     "request": "^2.88.2",
-    "socket.io": "^4.7.1"
+    "socket.io": "^4.7.1",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",

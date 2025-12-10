@@ -1,16 +1,15 @@
+const dotenv = require('dotenv');
+dotenv.config();
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 
-dotenv.config();
-
+const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const jobRoutes = require('./routes/jobs');
 const contractRoutes = require('./routes/contracts');
-
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 // Core Middleware
 app.use(cors());
@@ -35,6 +34,7 @@ mongoose
 app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/contracts', contractRoutes);
+app.use('/api/auth', authRoutes);
 
 // Root
 app.get('/', (req, res) => {
