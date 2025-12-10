@@ -13,15 +13,12 @@ const challengeSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-      expires: 300, // TTL: auto-delete after 300 seconds (5 minutes)
-    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt automatically
   }
 );
+
+challengeSchema.index({ createdAt: 1 }, { expireAfterSeconds: 300 });
 
 module.exports = mongoose.model('Challenge', challengeSchema);

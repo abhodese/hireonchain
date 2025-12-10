@@ -27,3 +27,5 @@ build
 # Other
 coverage
 *.md
+*.min.js
+solana-program
