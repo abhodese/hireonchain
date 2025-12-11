@@ -96,7 +96,7 @@ const Login: React.FC = () => {
     }
 
     try {
-      const response = await api.post('/api/users/login', {
+      const response = await api.post('/api/auth/login', {
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
       });
