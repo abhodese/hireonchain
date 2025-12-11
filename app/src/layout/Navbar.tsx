@@ -1,40 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import WalletConnect from '../components/WalletConnect';
+import { useWalletAuth } from '../hooks/useWalletAuth';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
-  }, []);
-
-  // Listen for storage changes (when token is added/removed)
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const token = localStorage.getItem('token');
-      setIsLoggedIn(!!token);
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('auth-change', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('auth-change', handleStorageChange);
-    };
-  }, []);
+  const { isAuthenticated, logout } = useWalletAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userInfo');
-    setIsLoggedIn(false);
-    // Dispatch custom event to notify all listeners
-    window.dispatchEvent(new Event('auth-change'));
-    navigate('/login');
+    logout();
+    navigate('/');
   };
 
   return (
@@ -75,7 +51,7 @@ const Navbar: React.FC = () => {
               Jobs
             </NavLink>
 
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <>
                 <NavLink
                   to="/dashboard"
@@ -208,7 +184,7 @@ const Navbar: React.FC = () => {
             >
               Jobs
             </NavLink>
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <>
                 <NavLink
                   to="/dashboard"

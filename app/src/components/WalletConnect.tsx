@@ -3,11 +3,20 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, Connection, clusterApiUrl } from '@solana/web3.js';
 import { WalletButton } from './WalletButton';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import { useWalletAuth } from '../hooks/useWalletAuth';
 
 const WalletConnect: FC = () => {
-  const { disconnect, publicKey, connected } = useWallet();
+  const { publicKey, connected } = useWallet();
+  const { logout } = useWalletAuth();
   const [balance, setBalance] = useState<number | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const navigate = useNavigate();
+
+  const handleDisconnect = () => {
+    logout();
+    navigate('/');
+  };
 
   // Get wallet balance
   useEffect(() => {
@@ -157,7 +166,7 @@ const WalletConnect: FC = () => {
 
                 {/* Disconnect Button */}
                 <button
-                  onClick={() => disconnect?.()}
+                  onClick={handleDisconnect}
                   className="w-full bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg px-4 py-2.5 text-sm border border-red-200 transition-colors"
                 >
                   Disconnect Wallet

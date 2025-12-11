@@ -36,19 +36,22 @@ const Home: React.FC = () => {
               </div>
             ) : (
               <div className="bg-primary-50 rounded-xl p-6 shadow-xl mx-auto w-full">
-                <div className="flex flex-col sm:flex-row justify-around gap-4">
+                <p className="text-secondary-600 mb-4 text-center text-lg">
+                  Browse currently available jobs
+                </p>
+                <div className="flex justify-center">
                   <Link
                     to="/jobs"
-                    className="border-2 border-primary-600 bg-primary-600 hover:bg-primary-50 rounded-xl text-white hover:text-primary-600 flex py-3 px-8 text-base font-semibold"
+                    className="px-4 py-2 bg-primary-600 hover:bg-primary-400 text-white rounded-lg transition-colors"
                   >
                     Browse Jobs
                   </Link>
-                  <Link
+                  {/* <Link
                     to="/register"
                     className="border-2 border-primary-600 rounded-xl text-primary-600 hover:text-white hover:bg-primary-600 flex py-3 px-8 text-base font-semibold"
                   >
                     Create Account
-                  </Link>
+                  </Link> */}
                 </div>
               </div>
             )}

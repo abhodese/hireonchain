@@ -19,6 +19,7 @@ import { Toaster } from 'react-hot-toast';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Layout } from './layout';
 import { Loading } from './components/Loading';
+import { AuthProvider } from './contexts/AuthProvider';
 
 // Lazy load to optimize
 const Home = lazy(() => import('./pages/Home'));
@@ -46,58 +47,59 @@ function App() {
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
-          <Router>
-            <Layout>
-              <Suspense fallback={<Loading />}>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/new" element={<New />} />
+          <AuthProvider>
+            <Router>
+              <Layout>
+                <Suspense fallback={<Loading />}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/new" element={<New />} />
 
-                  {/* Private routes that require authentication */}
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <PrivateRoute>
-                        <Dashboard />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <PrivateRoute>
-                        <Profile />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="/jobs/create"
-                    element={
-                      <PrivateRoute>
-                        <CreateJob />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route path="/jobs" element={<JobList />} />
-                  <Route
-                    path="/jobs/:id"
-                    element={
-                      <PrivateRoute>
-                        <JobDetail />
-                      </PrivateRoute>
-                    }
-                  />
+                    {/* Private routes that require authentication */}
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <PrivateRoute>
+                          <Dashboard />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <PrivateRoute>
+                          <Profile />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/jobs/create"
+                      element={
+                        <PrivateRoute>
+                          <CreateJob />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route path="/jobs" element={<JobList />} />
+                    <Route
+                      path="/jobs/:id"
+                      element={
+                        <PrivateRoute>
+                          <JobDetail />
+                        </PrivateRoute>
+                      }
+                    />
 
-                  {/* Fallback route */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
-              <ScrollToTop />
-            </Layout>
-          </Router>
-
+                    {/* Fallback route */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+                <ScrollToTop />
+              </Layout>
+            </Router>
+          </AuthProvider>
           <Toaster position="top-center" />
         </WalletModalProvider>
       </WalletProvider>

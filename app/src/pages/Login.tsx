@@ -3,9 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import api from '../utils/api';
 import axios from 'axios';
-import { useWalletAuth } from '../hooks/useWalletAuth';
 
 import { WalletButton } from '../components/WalletButton';
+import { useWalletAuth } from '../hooks/useWalletAuth';
 
 interface FormErrors {
   email?: string;
@@ -118,7 +118,7 @@ const Login: React.FC = () => {
 
       const success = await authenticateWallet();
 
-      if (success) {
+      if (!success) {
         setApiError('Invalid wallet signature. Please try again.');
 
         return;
@@ -279,7 +279,7 @@ const Login: React.FC = () => {
                   type="submit"
                   disabled={isAuthenticating || !connected}
                   className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                    !isAuthenticating || !connected
+                    isAuthenticating || !connected
                       ? 'bg-indigo-300 cursor-not-allowed'
                       : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                   }`}
