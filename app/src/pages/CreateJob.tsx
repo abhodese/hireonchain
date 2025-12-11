@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import api from '../utils/api';
+import { Layout } from '../layout';
 
 const CreateJob: React.FC = () => {
   const navigate = useNavigate();
@@ -114,103 +115,105 @@ const CreateJob: React.FC = () => {
   }
 
   return (
-    <div className="create-job-page">
-      <h1>Post a New Job</h1>
+    <Layout>
+      <div className="create-job-page">
+        <h1>Post a New Job</h1>
 
-      {!connected ? (
-        <div className="wallet-connection">
-          <p>Please connect your wallet to post a job</p>
-          <WalletMultiButton />
-        </div>
-      ) : (
-        <div className="job-form-container">
-          {submitError && <div className="error-message">{submitError}</div>}
+        {!connected ? (
+          <div className="wallet-connection">
+            <p>Please connect your wallet to post a job</p>
+            <WalletMultiButton />
+          </div>
+        ) : (
+          <div className="job-form-container">
+            {submitError && <div className="error-message">{submitError}</div>}
 
-          <form onSubmit={handleSubmit} className="job-form">
-            <div className="form-group">
-              <label htmlFor="title">Job Title</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="E.g. Develop a DeFi App on Solana"
-              />
-              {errors.title && <div className="error">{errors.title}</div>}
-            </div>
+            <form onSubmit={handleSubmit} className="job-form">
+              <div className="form-group">
+                <label htmlFor="title">Job Title</label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder="E.g. Develop a DeFi App on Solana"
+                />
+                {errors.title && <div className="error">{errors.title}</div>}
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="description">Job Description</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Provide a detailed description of the job requirements..."
-                rows={6}
-              />
-              {errors.description && <div className="error">{errors.description}</div>}
-            </div>
+              <div className="form-group">
+                <label htmlFor="description">Job Description</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Provide a detailed description of the job requirements..."
+                  rows={6}
+                />
+                {errors.description && <div className="error">{errors.description}</div>}
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="price">Budget (SOL)</label>
-              <input
-                type="number"
-                id="price"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                placeholder="Enter amount in SOL"
-                step="0.01"
-                min="0"
-              />
-              {errors.price && <div className="error">{errors.price}</div>}
-            </div>
+              <div className="form-group">
+                <label htmlFor="price">Budget (SOL)</label>
+                <input
+                  type="number"
+                  id="price"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  placeholder="Enter amount in SOL"
+                  step="0.01"
+                  min="0"
+                />
+                {errors.price && <div className="error">{errors.price}</div>}
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="skills">Required Skills (comma-separated)</label>
-              <input
-                type="text"
-                id="skills"
-                name="skills"
-                value={formData.skills}
-                onChange={handleChange}
-                placeholder="E.g. React, Solana, Rust"
-              />
-              {errors.skills && <div className="error">{errors.skills}</div>}
-            </div>
+              <div className="form-group">
+                <label htmlFor="skills">Required Skills (comma-separated)</label>
+                <input
+                  type="text"
+                  id="skills"
+                  name="skills"
+                  value={formData.skills}
+                  onChange={handleChange}
+                  placeholder="E.g. React, Solana, Rust"
+                />
+                {errors.skills && <div className="error">{errors.skills}</div>}
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="deadline">Deadline (optional)</label>
-              <input
-                type="date"
-                id="deadline"
-                name="deadline"
-                value={formData.deadline}
-                onChange={handleChange}
-                min={new Date().toISOString().split('T')[0]}
-              />
-              {errors.deadline && <div className="error">{errors.deadline}</div>}
-            </div>
+              <div className="form-group">
+                <label htmlFor="deadline">Deadline (optional)</label>
+                <input
+                  type="date"
+                  id="deadline"
+                  name="deadline"
+                  value={formData.deadline}
+                  onChange={handleChange}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+                {errors.deadline && <div className="error">{errors.deadline}</div>}
+              </div>
 
-            <div className="wallet-info">
-              <p>
-                <strong>Connected Wallet:</strong>{' '}
-                {publicKey
-                  ? `${publicKey.toString().slice(0, 6)}...${publicKey.toString().slice(-4)}`
-                  : ''}
-              </p>
-              <p className="wallet-note">This wallet will be associated with your job posting.</p>
-            </div>
+              <div className="wallet-info">
+                <p>
+                  <strong>Connected Wallet:</strong>{' '}
+                  {publicKey
+                    ? `${publicKey.toString().slice(0, 6)}...${publicKey.toString().slice(-4)}`
+                    : ''}
+                </p>
+                <p className="wallet-note">This wallet will be associated with your job posting.</p>
+              </div>
 
-            <button type="submit" className="submit-button" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating Job...' : 'Post Job'}
-            </button>
-          </form>
-        </div>
-      )}
-    </div>
+              <button type="submit" className="submit-button" disabled={isSubmitting}>
+                {isSubmitting ? 'Creating Job...' : 'Post Job'}
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 };
 

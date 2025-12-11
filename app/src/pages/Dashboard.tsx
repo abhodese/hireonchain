@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import api from '../utils/api';
+import { Layout } from '../layout';
 
 interface Job {
   _id: string;
@@ -76,7 +77,7 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-secondary-50 flex justify-center items-center">
+      <Layout>
         <div className="flex items-center space-x-2">
           <svg
             className="animate-spin h-8 w-8 text-primary-600"
@@ -100,13 +101,13 @@ const Dashboard: React.FC = () => {
           </svg>
           <span className="text-lg font-medium text-secondary-700">Loading dashboard...</span>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-secondary-50 flex justify-center items-center">
+      <Layout>
         <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg max-w-md">
           <div className="flex items-center">
             <svg
@@ -125,7 +126,7 @@ const Dashboard: React.FC = () => {
             <span className="font-medium">{error}</span>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
@@ -138,7 +139,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-secondary-50 py-8 px-4 sm:px-6 lg:px-8">
+    <Layout>
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <div>
@@ -414,7 +415,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

@@ -4,6 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import api from '../utils/api';
 import WalletRegistration from '../components/WalletRegistration';
 import axios from 'axios';
+import { Layout } from '../layout';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -126,7 +127,7 @@ const Register: React.FC = () => {
     setIsSubmitting(false);
   };
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <Layout>
       <div className="max-w-md w-full mx-auto space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -351,7 +352,7 @@ const Register: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
