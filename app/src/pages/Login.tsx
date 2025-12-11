@@ -5,6 +5,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import api from '../utils/api';
 import axios from 'axios';
 import { useWalletAuth } from '../hooks/useWalletAuth';
+import { Layout } from '../layout';
 
 interface FormErrors {
   email?: string;
@@ -155,7 +156,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-secondary-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <Layout>
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-primary-800">
           Login to Your Account
@@ -352,7 +353,7 @@ const Login: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

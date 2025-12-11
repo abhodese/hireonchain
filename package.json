@@ -27,5 +27,8 @@
     "type": "git",
     "url": "git+https://github.com/vladyweb3ai/sol-marketplace.git"
   },
-  "homepage": "https://github.com/vladyweb3ai/sol-marketplace#readme"
+  "homepage": "https://github.com/vladyweb3ai/sol-marketplace#readme",
+  "dependencies": {
+    "react-hot-toast": "^2.6.0"
+  }
 }

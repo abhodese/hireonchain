@@ -17,11 +17,11 @@ import JobList from './pages/JobList';
 import JobDetail from './pages/JobDetail';
 import CreateJob from './pages/CreateJob';
 import Profile from './pages/Profile';
-import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
 
 // Import wallet adapter styles
 import '@solana/wallet-adapter-react-ui/styles.css';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   // Set up Solana network connection (devnet for testing)
@@ -40,55 +40,52 @@ function App() {
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <Router>
-            <div className="app">
-              <Navbar />
-              <main className="app-content">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
-                  {/* Private routes that require authentication */}
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <PrivateRoute>
-                        <Dashboard />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <PrivateRoute>
-                        <Profile />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="/jobs/create"
-                    element={
-                      <PrivateRoute>
-                        <CreateJob />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route path="/jobs" element={<JobList />} />
-                  <Route
-                    path="/jobs/:id"
-                    element={
-                      <PrivateRoute>
-                        <JobDetail />
-                      </PrivateRoute>
-                    }
-                  />
+              {/* Private routes that require authentication */}
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute>
+                    <Profile />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/jobs/create"
+                element={
+                  <PrivateRoute>
+                    <CreateJob />
+                  </PrivateRoute>
+                }
+              />
+              <Route path="/jobs" element={<JobList />} />
+              <Route
+                path="/jobs/:id"
+                element={
+                  <PrivateRoute>
+                    <JobDetail />
+                  </PrivateRoute>
+                }
+              />
 
-                  {/* Fallback route */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </main>
-            </div>
+              {/* Fallback route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </Router>
+
+          <Toaster position="top-center" />
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

@@ -4,7 +4,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import api from '../utils/api';
 import { createContract } from '../utils/contractUtils';
-import axios from 'axios';
 
 interface Proposal {
   _id: string;
