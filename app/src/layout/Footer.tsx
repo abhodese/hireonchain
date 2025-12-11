@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-primary-50 border-t border-primary-100 mt-auto w-full">
+    <footer className="bg-primary-50 border-t border-primary-100 mt-16 w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-primary-600 font-bold text-lg">Solana Freelance</div>
+          <Link to="/" className="text-primary-600 font-bold text-lg hover:text-primary-500">
+            Solana Freelance
+          </Link>
 
           <div className="flex items-center gap-6 text-sm text-secondary-600">
-            <Link to="/about" className="hover:text-primary-600">
+            <Link to="/login" className="hover:text-primary-600">
               About
             </Link>
             <Link to="/terms" className="hover:text-primary-600">

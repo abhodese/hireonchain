@@ -22,6 +22,7 @@ import PrivateRoute from './components/PrivateRoute';
 // Import wallet adapter styles
 import '@solana/wallet-adapter-react-ui/styles.css';
 import { Toaster } from 'react-hot-toast';
+import { ScrollToTop } from './components/ScrollToTop';
 
 function App() {
   // Set up Solana network connection (devnet for testing)
@@ -83,6 +84,8 @@ function App() {
               {/* Fallback route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+
+            <ScrollToTop />
           </Router>
 
           <Toaster position="top-center" />

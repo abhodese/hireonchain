@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import WalletConnect from '../components/WalletConnect';
 
 const Navbar: React.FC = () => {
@@ -41,42 +41,66 @@ const Navbar: React.FC = () => {
     <>
       <nav className="hidden md:flex bg-primary-50 shadow-lg mb-12">
         <div className="w-screen px-4 sm:px-6 lg:px-8 flex justify-between h-16">
-          <Link
+          <NavLink
             to="/"
             className="text-primary-600 font-bold text-xl shrink-0 flex items-center hover:text-primary-500"
           >
             Solana Freelance
-          </Link>
+          </NavLink>
 
           {/* Desktop menu */}
           <div className="hidden md:flex md:items-center md:space-x-4 w-screen justify-end">
-            <Link
+            <NavLink
               to="/"
-              className="text-primary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md font-semibold ${
+                  isActive
+                    ? 'text-primary-600 bg-primary-100'
+                    : 'text-secondary-600 hover:text-primary-600'
+                }`
+              }
             >
               Home
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink
               to="/jobs"
-              className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md font-semibold ${
+                  isActive
+                    ? 'text-primary-600 bg-primary-100'
+                    : 'text-secondary-600 hover:text-primary-600'
+                }`
+              }
             >
               Jobs
-            </Link>
+            </NavLink>
 
             {isLoggedIn ? (
               <>
-                <Link
+                <NavLink
                   to="/dashboard"
-                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
+                  className={({ isActive }) =>
+                    `px-3 py-2 rounded-md font-semibold ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-100'
+                        : 'text-secondary-600 hover:text-primary-600'
+                    }`
+                  }
                 >
                   Dashboard
-                </Link>
-                <Link
+                </NavLink>
+                <NavLink
                   to="/profile"
-                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
+                  className={({ isActive }) =>
+                    `px-3 py-2 rounded-md font-semibold ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-100'
+                        : 'text-secondary-600 hover:text-primary-600'
+                    }`
+                  }
                 >
                   Profile
-                </Link>
+                </NavLink>
                 <button
                   onClick={handleLogout}
                   className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
@@ -86,18 +110,30 @@ const Navbar: React.FC = () => {
               </>
             ) : (
               <>
-                <Link
+                <NavLink
                   to="/login"
-                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
+                  className={({ isActive }) =>
+                    `px-3 py-2 rounded-md font-semibold ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-100'
+                        : 'text-secondary-600 hover:text-primary-600'
+                    }`
+                  }
                 >
                   Login
-                </Link>
-                <Link
+                </NavLink>
+                <NavLink
                   to="/register"
-                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
+                  className={({ isActive }) =>
+                    `px-3 py-2 rounded-md font-semibold ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-100'
+                        : 'text-secondary-600 hover:text-primary-600'
+                    }`
+                  }
                 >
                   Register
-                </Link>
+                </NavLink>
               </>
             )}
 
@@ -111,9 +147,9 @@ const Navbar: React.FC = () => {
         <div className="bg-primary-50 shadow-lg mb-12">
           {/* Mobile Header Bar */}
           <div className="flex items-center justify-between px-4 py-3 md:hidden">
-            <Link to="/" className="text-primary-600 font-bold text-xl hover:text-primary-500">
+            <NavLink to="/" className="text-primary-600 font-bold text-xl hover:text-primary-500">
               Solana Freelance
-            </Link>
+            </NavLink>
 
             {/* Hamburger Button */}
             <button
@@ -146,36 +182,60 @@ const Navbar: React.FC = () => {
               isMobileMenuOpen ? 'block' : 'hidden'
             } md:hidden px-2 pt-2 pb-3 space-y-1 border-t border-gray-200`}
           >
-            <Link
+            <NavLink
               to="/"
-              className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
+              className={({ isActive }) =>
+                `block px-3 py-2 rounded-md text-base font-semibold ${
+                  isActive
+                    ? 'text-primary-600 bg-primary-100'
+                    : 'text-secondary-600 hover:text-primary-600'
+                }`
+              }
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Home
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink
               to="/jobs"
-              className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
+              className={({ isActive }) =>
+                `block px-3 py-2 rounded-md text-base font-semibold ${
+                  isActive
+                    ? 'text-primary-600 bg-primary-100'
+                    : 'text-secondary-600 hover:text-primary-600'
+                }`
+              }
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Jobs
-            </Link>
+            </NavLink>
             {isLoggedIn ? (
               <>
-                <Link
+                <NavLink
                   to="/dashboard"
-                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-base font-semibold ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-100'
+                        : 'text-secondary-600 hover:text-primary-600'
+                    }`
+                  }
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Dashboard
-                </Link>
-                <Link
+                </NavLink>
+                <NavLink
                   to="/profile"
-                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-base font-semibold ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-100'
+                        : 'text-secondary-600 hover:text-primary-600'
+                    }`
+                  }
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Profile
-                </Link>
+                </NavLink>
                 <button
                   onClick={() => {
                     handleLogout();
@@ -188,20 +248,32 @@ const Navbar: React.FC = () => {
               </>
             ) : (
               <>
-                <Link
+                <NavLink
                   to="/login"
-                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-base font-semibold ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-100'
+                        : 'text-secondary-600 hover:text-primary-600'
+                    }`
+                  }
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Login
-                </Link>
-                <Link
+                </NavLink>
+                <NavLink
                   to="/register"
-                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-base font-semibold ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-100'
+                        : 'text-secondary-600 hover:text-primary-600'
+                    }`
+                  }
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Register
-                </Link>
+                </NavLink>
               </>
             )}
             <div className="pt-4 px-3 border-t border-gray-200 mt-2">

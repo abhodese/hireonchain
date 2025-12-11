@@ -40,13 +40,13 @@ const Home: React.FC = () => {
                   <div className="flex flex-col sm:flex-row justify-around gap-4">
                     <Link
                       to="/jobs"
-                      className="border-2 border-primary-600 bg-primary-600 hover:bg-primary-500 hover:border-primary-500 rounded-xl text-white flex py-3 px-8 text-base font-semibold"
+                      className="border-2 border-primary-600 bg-primary-600 hover:bg-primary-50 rounded-xl text-white hover:text-primary-600 flex py-3 px-8 text-base font-semibold"
                     >
                       Browse Jobs
                     </Link>
                     <Link
                       to="/register"
-                      className="border-2 border-primary-600 hover:border-primary-400 rounded-xl text-primary-600 hover:text-primary-400 flex py-3 px-8 text-base font-semibold"
+                      className="border-2 border-primary-600 rounded-xl text-primary-600 hover:text-white hover:bg-primary-600 flex py-3 px-8 text-base font-semibold"
                     >
                       Create Account
                     </Link>
@@ -58,7 +58,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* Features Section */}
-        <div className="py-16 bg-white">
+        <div className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-center text-secondary-900 mb-12">
               Why Choose Our Platform?
@@ -66,9 +66,9 @@ const Home: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="bg-primary-50 rounded-xl p-6 shadow-xl">
-                <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+                <div className="h-12 w-12 bg-white shadow-2xl rounded-full flex items-center justify-center mb-4">
                   <svg
-                    className="h-6 w-6 text-primary-600"
+                    className="h-7 w-7 text-primary-600"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -104,9 +104,9 @@ const Home: React.FC = () => {
               </div>
 
               <div className="bg-primary-50 rounded-xl p-6 shadow-xl">
-                <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+                <div className="h-12 w-12 bg-white shadow-2xl rounded-full flex items-center justify-center mb-4">
                   <svg
-                    className="h-6 w-6 text-primary-600"
+                    className="h-7 w-7 text-primary-600"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -135,9 +135,9 @@ const Home: React.FC = () => {
               </div>
 
               <div className="bg-primary-50 rounded-xl p-6 shadow-xl">
-                <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+                <div className="h-12 w-12 bg-white shadow-2xl rounded-full flex items-center justify-center mb-4">
                   <svg
-                    className="h-6 w-6 text-primary-600"
+                    className="h-7 w-7 text-primary-600"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -159,9 +159,9 @@ const Home: React.FC = () => {
               </div>
 
               <div className="bg-primary-50 rounded-xl p-6 shadow-xl">
-                <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+                <div className="h-12 w-12 bg-white shadow-2xl rounded-full flex items-center justify-center mb-4">
                   <svg
-                    className="h-6 w-6 text-primary-600"
+                    className="h-7 w-7 text-primary-600"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -200,25 +200,26 @@ const Home: React.FC = () => {
         </div>
 
         {/* How It Works Section */}
-        <div className="py-16 bg-secondary-50">
+        <div className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-center text-secondary-900 mb-12">
               How It Works
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="flex flex-col items-center text-center">
-                <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xl">
-                  1
+              <div className="flex flex-col items-center text-center justify-center">
+                <div className="border-2 border-primary-100 rounded-xl p-6 shadow-xl text-center">
+                  <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center mx-auto justify-center mb-4 text-white font-bold text-xl">
+                    1
+                  </div>
+                  <h3 className="text-xl font-semibold text-secondary-900 mb-2">Connect Wallet</h3>
+                  <p className="text-secondary-600">
+                    Connect your Phantom wallet to access the platform
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-secondary-900 mb-2">Connect Wallet</h3>
-                <p className="text-secondary-600">
-                  Connect your Phantom wallet to access the platform
-                </p>
               </div>
-
-              <div className="flex flex-col items-center text-center">
-                <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xl">
+              <div className="border-2 border-primary-100 rounded-xl p-6 shadow-xl text-center">
+                <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center mx-auto justify-center mb-4 text-white font-bold text-xl">
                   2
                 </div>
                 <h3 className="text-xl font-semibold text-secondary-900 mb-2">Create Profile</h3>
@@ -226,17 +227,15 @@ const Home: React.FC = () => {
                   Register as a client or freelancer with your skills
                 </p>
               </div>
-
-              <div className="flex flex-col items-center text-center">
-                <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xl">
+              <div className="border-2 border-primary-100 rounded-xl p-6 shadow-xl text-center">
+                <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center mx-auto justify-center mb-4 text-white font-bold text-xl">
                   3
                 </div>
                 <h3 className="text-xl font-semibold text-secondary-900 mb-2">Post or Find Jobs</h3>
                 <p className="text-secondary-600">Post new projects or browse available jobs</p>
               </div>
-
-              <div className="flex flex-col items-center text-center">
-                <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center mb-4 text-white font-bold text-xl">
+              <div className="border-2 border-primary-100 rounded-xl p-6 shadow-xl text-center">
+                <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center mx-auto justify-center mb-4 text-white font-bold text-xl">
                   4
                 </div>
                 <h3 className="text-xl font-semibold text-secondary-900 mb-2">Secure Payments</h3>
