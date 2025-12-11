@@ -8,8 +8,8 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const jobRoutes = require('./routes/jobs');
 const contractRoutes = require('./routes/contracts');
-const app = express();
 const PORT = Number(process.env.PORT) || 5000;
+const app = express();
 
 // Core Middleware
 app.use(cors());
@@ -17,7 +17,9 @@ app.use(express.json());
 
 // Debug Middleware – NACH express.json()
 app.use((req, res, next) => {
-  console.log('A', req.method, req.url, 'BODY:', req.body);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('A', req.method, req.url, 'BODY:', req.body);
+  }
   next();
 });
 

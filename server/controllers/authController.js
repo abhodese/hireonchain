@@ -2,6 +2,9 @@ const crypto = require('crypto');
 const nacl = require('tweetnacl');
 const bs58 = require('bs58').default;
 const Challenge = require('../models/Challenge');
+const User = require('../models/User');
+const { generateToken } = require('../utils/auth');
+const { isValidSolanaAddress } = require('../utils/solana');
 
 // @desc    Generate authentication challenge
 // @route   POST /api/auth/challenge
@@ -78,8 +81,6 @@ const verifySignature = async (req, res) => {
     // Delete used challenge
     await Challenge.deleteOne({ publicKey });
 
-    // TODO: Create user session or issue JWT token here
-
     return res.json({
       success: true,
       publicKey,
@@ -91,7 +92,103 @@ const verifySignature = async (req, res) => {
   }
 };
 
+// @desc    Register a new user
+// @route   POST /api/users
+// @access  Public
+const registerUser = async (req, res) => {
+  try {
+    const { username, email, password, walletAddress, role, skills, bio } = req.body;
+
+    // Wallet validation
+    if (!isValidSolanaAddress(walletAddress)) {
+      return res.status(400).json({ message: 'Invalid Solana wallet address' });
+    }
+
+    // Check duplicates
+    const userExists = await User.findOne({
+      $or: [{ email }, { username }, { walletAddress }],
+    });
+
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Create user
+    const user = await User.create({
+      username,
+      email,
+      password,
+      walletAddress,
+      role,
+      skills: skills || [],
+      bio: bio || '',
+    });
+
+    return res.status(201).json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      walletAddress: user.walletAddress,
+      role: user.role,
+      skills: user.skills,
+      bio: user.bio,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    console.error('REGISTER ERROR:', error);
+    return res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+};
+
+// @desc    Auth user & get token
+// @route   POST /api/users/login
+// @access  Public
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user & include password
+    const user = await User.findOne({ email }).select('+password');
+
+    // If no user in DB → send generic auth error
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Compare passwords
+    const isMatch = await user.matchPassword(password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    return res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      walletAddress: user.walletAddress,
+      role: user.role,
+      skills: user.skills,
+      bio: user.bio,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    console.error('LOGIN ERROR:', error);
+    return res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+};
+
 module.exports = {
   generateChallenge,
   verifySignature,
+  registerUser,
+  loginUser,
 };

@@ -1,7 +1,5 @@
 const express = require('express');
 const {
-  registerUser,
-  loginUser,
   getUserProfile,
   updateUserProfile,
   getUserById,
@@ -13,8 +11,6 @@ const { protect } = require('../middleware/authMiddleware'); // KORRIGIERTER PFA
 const router = express.Router();
 
 // Public routes
-router.post('/', registerUser);
-router.post('/login', loginUser);
 router.get('/freelancers', getFreelancers);
 
 // Protected routes
