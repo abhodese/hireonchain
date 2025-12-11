@@ -5,11 +5,11 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
   clusterApiUrl,
-  Cluster,
+  type Cluster,
   TransactionInstruction,
   Keypair,
 } from '@solana/web3.js';
-import { WalletContextState } from '@solana/wallet-adapter-react';
+import type { WalletContextState } from '@solana/wallet-adapter-react';
 
 // Create a connection to the Solana blockchain
 export const getSolanaConnection = () => {

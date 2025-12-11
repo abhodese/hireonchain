@@ -4,7 +4,10 @@
   "description": "A decentralized job marketplace platform built on Solana blockchain.",
   "private": true,
   "scripts": {
-    "prepare": "simple-git-hooks"
+    "prepare": "simple-git-hooks",
+    "dev": "concurrently \"npm run dev:app\" \"npm run dev:server\"",
+    "dev:app": "cd app && npm run dev",
+    "dev:server": "cd server && npm run dev"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"
@@ -15,9 +18,10 @@
     ]
   },
   "devDependencies": {
-    "simple-git-hooks": "^2.9.0",
+    "concurrently": "^9.2.1",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.7.4"
+    "prettier": "^3.7.4",
+    "simple-git-hooks": "^2.9.0"
   },
   "repository": {
     "type": "git",
