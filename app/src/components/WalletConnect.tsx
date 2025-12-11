@@ -1,4 +1,4 @@
-import React, { FC, useMemo, useState, useEffect } from 'react';
+import { FC, useMemo, useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, Connection, clusterApiUrl } from '@solana/web3.js';
 import { WalletButton } from './WalletButton';
@@ -122,7 +122,7 @@ const WalletConnect: FC = () => {
                         navigator.clipboard.writeText(walletAddress);
                         toast.success('Address copied to clipboard!');
                       }}
-                      className="p-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors flex-shrink-0"
+                      className="p-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors shrink-0"
                       title="Copy address"
                     >
                       <svg

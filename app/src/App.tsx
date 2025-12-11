@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
@@ -8,23 +9,26 @@ import {
 } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import JobList from './pages/JobList';
-import JobDetail from './pages/JobDetail';
-import CreateJob from './pages/CreateJob';
-import Profile from './pages/Profile';
 import PrivateRoute from './components/PrivateRoute';
 
 // Import wallet adapter styles
 import '@solana/wallet-adapter-react-ui/styles.css';
+// Temp page and layout components
+import New from './pages/New';
 import { Toaster } from 'react-hot-toast';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Layout } from './layout';
-import New from './pages/New';
+import { Loading } from './components/Loading';
+
+// Lazy load to optimize
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const JobList = lazy(() => import('./pages/JobList'));
+const JobDetail = lazy(() => import('./pages/JobDetail'));
+const CreateJob = lazy(() => import('./pages/CreateJob'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 function App() {
   // Set up Solana network connection (devnet for testing)
@@ -44,51 +48,52 @@ function App() {
         <WalletModalProvider>
           <Router>
             <Layout>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/new" element={<New />} />
+              <Suspense fallback={<Loading />}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/new" element={<New />} />
 
-                {/* Private routes that require authentication */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <PrivateRoute>
-                      <Dashboard />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <PrivateRoute>
-                      <Profile />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/jobs/create"
-                  element={
-                    <PrivateRoute>
-                      <CreateJob />
-                    </PrivateRoute>
-                  }
-                />
-                <Route path="/jobs" element={<JobList />} />
-                <Route
-                  path="/jobs/:id"
-                  element={
-                    <PrivateRoute>
-                      <JobDetail />
-                    </PrivateRoute>
-                  }
-                />
+                  {/* Private routes that require authentication */}
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <PrivateRoute>
+                        <Dashboard />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <PrivateRoute>
+                        <Profile />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/jobs/create"
+                    element={
+                      <PrivateRoute>
+                        <CreateJob />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route path="/jobs" element={<JobList />} />
+                  <Route
+                    path="/jobs/:id"
+                    element={
+                      <PrivateRoute>
+                        <JobDetail />
+                      </PrivateRoute>
+                    }
+                  />
 
-                {/* Fallback route */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-
+                  {/* Fallback route */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
               <ScrollToTop />
             </Layout>
           </Router>

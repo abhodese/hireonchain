@@ -1,8 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import api from '../utils/api';
-import WalletRegistration from '../components/WalletRegistration';
 import axios from 'axios';
 import { WalletButton } from '../components/WalletButton';
 
