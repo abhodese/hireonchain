@@ -368,7 +368,7 @@ const Dashboard: React.FC = () => {
 
                         <p className="flex items-center break-all">
                           <svg
-                            className="h-4 w-4 mr-1.5 text-secondary-500 flex-shrink-0"
+                            className="h-4 w-4 mr-1.5 text-secondary-500 shrink-0"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"

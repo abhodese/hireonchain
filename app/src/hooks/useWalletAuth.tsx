@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import bs58 from 'bs58';
-import request from '../utils/request';
+import api from '../utils/api';
 
 interface ChallengeResponse {
   message: string;
@@ -31,7 +31,7 @@ export const useWalletAuth = () => {
 
     try {
       // Step 1: Request challenge from backend
-      const challengeResponse = await request.post<ChallengeResponse>(`/api/auth/challenge`, {
+      const challengeResponse = await api.post<ChallengeResponse>(`/api/auth/challenge`, {
         publicKey: publicKey.toBase58(),
       });
 
@@ -43,7 +43,7 @@ export const useWalletAuth = () => {
       const signature = bs58.encode(signatureBytes);
 
       // Step 3: Verify signature with backend
-      const verifyResponse = await request.post<VerifyResponse>(`/api/auth/sign`, {
+      const verifyResponse = await api.post<VerifyResponse>(`/api/auth/sign`, {
         publicKey: publicKey.toBase58(),
         signature,
         nonce,
