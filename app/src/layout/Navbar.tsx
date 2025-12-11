@@ -39,7 +39,7 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="hidden md:flex bg-white shadow-lg mb-12">
+      <nav className="hidden md:flex bg-primary-50 shadow-lg mb-12">
         <div className="w-screen px-4 sm:px-6 lg:px-8 flex justify-between h-16">
           <Link
             to="/"
@@ -52,13 +52,13 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex md:items-center md:space-x-4 w-screen justify-end">
             <Link
               to="/"
-              className="text-primary-600 hover:text-primary-600 px-3 py-2 rounded-md hover:font-semibold"
+              className="text-primary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
             >
               Home
             </Link>
             <Link
               to="/jobs"
-              className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md hover:font-semibold"
+              className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
             >
               Jobs
             </Link>
@@ -67,19 +67,19 @@ const Navbar: React.FC = () => {
               <>
                 <Link
                   to="/dashboard"
-                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md hover:font-semibold"
+                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/profile"
-                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md hover:font-semibold"
+                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
                 >
                   Profile
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md hover:font-semibold"
+                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
                 >
                   Logout
                 </button>
@@ -88,13 +88,13 @@ const Navbar: React.FC = () => {
               <>
                 <Link
                   to="/login"
-                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md hover:font-semibold"
+                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md hover:font-semibold"
+                  className="text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md font-semibold"
                 >
                   Register
                 </Link>
@@ -108,7 +108,7 @@ const Navbar: React.FC = () => {
 
       {/* Mobile menu */}
       <nav>
-        <div className="bg-white shadow-lg mb-12">
+        <div className="bg-primary-50 shadow-lg mb-12">
           {/* Mobile Header Bar */}
           <div className="flex items-center justify-between px-4 py-3 md:hidden">
             <Link to="/" className="text-primary-600 font-bold text-xl hover:text-primary-500">
@@ -148,14 +148,14 @@ const Navbar: React.FC = () => {
           >
             <Link
               to="/"
-              className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base hover:font-semibold"
+              className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Home
             </Link>
             <Link
               to="/jobs"
-              className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base hover:font-semibold"
+              className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Jobs
@@ -164,14 +164,14 @@ const Navbar: React.FC = () => {
               <>
                 <Link
                   to="/dashboard"
-                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base hover:font-semibold"
+                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/profile"
-                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base hover:font-semibold"
+                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Profile
@@ -181,7 +181,7 @@ const Navbar: React.FC = () => {
                     handleLogout();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="block w-full text-left text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base hover:font-semibold"
+                  className="block w-full text-left text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
                 >
                   Logout
                 </button>
@@ -190,14 +190,14 @@ const Navbar: React.FC = () => {
               <>
                 <Link
                   to="/login"
-                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base hover:font-semibold"
+                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base hover:font-semibold"
+                  className="block text-secondary-600 hover:text-primary-600 px-3 py-2 rounded-md text-base font-semibold"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Register

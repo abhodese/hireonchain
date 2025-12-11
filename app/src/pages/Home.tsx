@@ -41,13 +41,13 @@ const Home: React.FC = () => {
                   <div className="flex flex-col sm:flex-row justify-around gap-4">
                     <Link
                       to="/jobs"
-                      className="bg-primary-600 rounded-xl text-white flex py-3 px-8 text-base"
+                      className="border-2 border-primary-600 bg-primary-600 hover:bg-primary-500 hover:border-primary-500 rounded-xl text-white flex py-3 px-8 text-base font-semibold"
                     >
                       Browse Jobs
                     </Link>
                     <Link
                       to="/register"
-                      className="border border-primary-600 rounded-xl text-primary-600 flex py-3 px-8 text-base"
+                      className="border-2 border-primary-600 hover:border-primary-400 rounded-xl text-primary-600 hover:text-primary-400 flex py-3 px-8 text-base font-semibold"
                     >
                       Create Account
                     </Link>
