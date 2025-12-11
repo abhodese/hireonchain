@@ -16,11 +16,11 @@ const Home: React.FC = () => {
             <h1 className="text-4xl md:text-5xl font-bold text-primary-600 mb-4">
               Solana Freelance Platform
             </h1>
-            <h2 className="text-2xl md:text-3xl font-medium text-secondary-700 mb-6">
+            <h2 className="text-2xl md:text-3xl text-secondary-900 font-semibold mb-6">
               Connect, Work, and Get Paid with Crypto
             </h2>
 
-            <p className="text-lg text-secondary-600 mb-10 leading-relaxed">
+            <p className="text-lg text-secondary-700 mb-10 leading-relaxed">
               A decentralized freelance marketplace powered by Solana blockchain. Find work, hire
               talent, and make secure payments with SOL.
             </p>
@@ -65,7 +65,7 @@ const Home: React.FC = () => {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="card hover:shadow-lg transition-shadow">
+              <div className="bg-primary-50 rounded-xl p-6 shadow-xl">
                 <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                   <svg
                     className="h-6 w-6 text-primary-600"
@@ -103,7 +103,7 @@ const Home: React.FC = () => {
                 </p>
               </div>
 
-              <div className="card hover:shadow-lg transition-shadow">
+              <div className="bg-primary-50 rounded-xl p-6 shadow-xl">
                 <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                   <svg
                     className="h-6 w-6 text-primary-600"
@@ -134,7 +134,7 @@ const Home: React.FC = () => {
                 </p>
               </div>
 
-              <div className="card hover:shadow-lg transition-shadow">
+              <div className="bg-primary-50 rounded-xl p-6 shadow-xl">
                 <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                   <svg
                     className="h-6 w-6 text-primary-600"
@@ -158,7 +158,7 @@ const Home: React.FC = () => {
                 </p>
               </div>
 
-              <div className="card hover:shadow-lg transition-shadow">
+              <div className="bg-primary-50 rounded-xl p-6 shadow-xl">
                 <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                   <svg
                     className="h-6 w-6 text-primary-600"
