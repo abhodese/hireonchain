@@ -12,26 +12,26 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@solana/wallet-adapter-base": "^0.9.23",
-    "@solana/web3.js": "^1.88.0",
-    "bcryptjs": "^2.4.3",
+    "@solana/wallet-adapter-base": "^0.9.27",
+    "@solana/web3.js": "^1.98.4",
+    "bcryptjs": "^3.0.3",
     "bs58": "^6.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
+    "dotenv": "^17.2.3",
     "execp": "^0.0.1",
-    "express": "^4.18.2",
+    "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "fs": "^0.0.1-security",
     "joi": "^18.0.2",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.0.1",
     "path": "^0.12.7",
     "request": "^2.88.2",
-    "socket.io": "^4.7.1",
+    "socket.io": "^4.8.1",
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10",
+    "nodemon": "^3.1.11",
     "prettier": "^3.7.4"
   }
 }

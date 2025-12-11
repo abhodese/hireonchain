@@ -23,6 +23,8 @@ import PrivateRoute from './components/PrivateRoute';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import { Toaster } from 'react-hot-toast';
 import { ScrollToTop } from './components/ScrollToTop';
+import { Layout } from './layout';
+import New from './pages/New';
 
 function App() {
   // Set up Solana network connection (devnet for testing)
@@ -41,51 +43,54 @@ function App() {
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <Router>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/new" element={<New />} />
 
-              {/* Private routes that require authentication */}
-              <Route
-                path="/dashboard"
-                element={
-                  <PrivateRoute>
-                    <Dashboard />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <PrivateRoute>
-                    <Profile />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/jobs/create"
-                element={
-                  <PrivateRoute>
-                    <CreateJob />
-                  </PrivateRoute>
-                }
-              />
-              <Route path="/jobs" element={<JobList />} />
-              <Route
-                path="/jobs/:id"
-                element={
-                  <PrivateRoute>
-                    <JobDetail />
-                  </PrivateRoute>
-                }
-              />
+                {/* Private routes that require authentication */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <PrivateRoute>
+                      <Dashboard />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <PrivateRoute>
+                      <Profile />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/jobs/create"
+                  element={
+                    <PrivateRoute>
+                      <CreateJob />
+                    </PrivateRoute>
+                  }
+                />
+                <Route path="/jobs" element={<JobList />} />
+                <Route
+                  path="/jobs/:id"
+                  element={
+                    <PrivateRoute>
+                      <JobDetail />
+                    </PrivateRoute>
+                  }
+                />
 
-              {/* Fallback route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                {/* Fallback route */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
 
-            <ScrollToTop />
+              <ScrollToTop />
+            </Layout>
           </Router>
 
           <Toaster position="top-center" />

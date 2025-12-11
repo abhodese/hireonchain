@@ -4,11 +4,10 @@ const User = require('../models/User');
 // Generate JWT token
 const generateToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+    expiresIn: '1d',
   });
 };
 
-module.exports = { generateToken };
 // Authentication middleware
 const protect = async (req, res, next) => {
   let token;

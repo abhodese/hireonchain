@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import api from '../utils/api';
+import WalletRegistration from '../components/WalletRegistration';
 import axios from 'axios';
 import { WalletButton } from '../components/WalletButton';
 
-const Register: React.FC = () => {
+const New: React.FC = () => {
   const navigate = useNavigate();
   const { connected, publicKey } = useWallet();
 
@@ -135,10 +136,10 @@ const Register: React.FC = () => {
     <>
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-primary-600">
-          Create a new account
+          Create your account
         </h2>
         <p className="mt-2 text-center text-sm text-secondary-600">
-          Connect your wallet and register to continue
+          Connect your wallet and sign in to continue
         </p>
       </div>
 
@@ -397,4 +398,4 @@ const Register: React.FC = () => {
   );
 };
 
-export default Register;
+export default New;

@@ -93,7 +93,7 @@ const verifySignature = async (req, res) => {
 };
 
 // @desc    Register a new user
-// @route   POST /api/users
+// @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
   try {
@@ -145,7 +145,7 @@ const registerUser = async (req, res) => {
 };
 
 // @desc    Auth user & get token
-// @route   POST /api/users/login
+// @route   POST /api/auth/login
 // @access  Public
 const loginUser = async (req, res) => {
   try {

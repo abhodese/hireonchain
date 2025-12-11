@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import api from '../utils/api';
-import { Layout } from '../layout';
 
 interface Job {
   _id: string;
@@ -103,8 +102,7 @@ const JobList: React.FC = () => {
   }
 
   return (
-    <Layout>
-      {' '}
+    <>
       <div className="job-list-page">
         <div className="job-list-header">
           <h1>Available Jobs</h1>
@@ -214,7 +212,7 @@ const JobList: React.FC = () => {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 };
 
