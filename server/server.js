@@ -3,6 +3,8 @@ dotenv.config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDoc = require('../docs/swagger.json');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -42,6 +44,11 @@ app.use('/api/auth', authRoutes);
 app.get('/', (req, res) => {
   res.send('Solana Freelance Platform API is running');
 });
+
+// Api Docs, run from docs folder
+if (process.env.NODE_ENV === 'docs') {
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+}
 
 // Start Server
 app.listen(PORT, () => {

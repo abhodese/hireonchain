@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import tailwindcss from '@tailwindcss/vite';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     nodePolyfills({
       include: ['crypto', 'stream', 'util', 'events', 'buffer', 'process'],
       globals: {
@@ -13,13 +14,12 @@ export default defineConfig({
         process: true,
       },
     }),
-    tailwindcss(),
   ],
   resolve: {
     alias: {
+      os: 'os-browserify/browser',
       stream: 'stream-browserify',
       https: 'https-browserify',
-      os: 'os-browserify/browser',
       url: 'url',
     },
   },
