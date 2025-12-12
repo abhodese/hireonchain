@@ -2,6 +2,7 @@
 // @route   GET /api/users/profile
 
 const User = require('../models/User');
+const { generateToken } = require('../utils/auth');
 
 // @access  Private
 const getUserProfile = async (req, res) => {
