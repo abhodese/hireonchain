@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const swaggerUi = require('swagger-ui-express');
-const swaggerDoc = require('../docs/swagger.json');
+const swaggerDoc = require('./docs/swagger.json');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
 });
 
 // Api Docs, run from docs folder
-if (process.env.NODE_ENV === 'docs') {
+if (process.env.NODE_ENV !== 'production') {
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 }
 

@@ -1,23 +1,16 @@
 // @desc    Get user profile
 // @route   GET /api/users/profile
+
+const User = require('../models/User');
+
 // @access  Private
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('-password');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    return res.json({
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      walletAddress: user.walletAddress,
-      role: user.role,
-      skills: user.skills,
-      bio: user.bio,
-      rating: user.rating,
-      reviews: user.reviews,
-    });
+    return res.json(user);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Server error' });

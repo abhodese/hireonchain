@@ -18,8 +18,10 @@ export type AuthAction =
   | { type: 'AUTH_LOGOUT' }
   | { type: 'CLEAR_ERROR' };
 
+const token = localStorage.getItem('sol_token') ? true : false;
+
 export const initialAuthState: AuthState = {
-  isAuthenticated: false,
+  isAuthenticated: token,
   publicKey: null,
   isAuthenticating: false,
   error: null,

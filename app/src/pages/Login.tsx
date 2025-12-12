@@ -125,7 +125,7 @@ const Login: React.FC = () => {
       }
 
       // Save authentication data
-      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('sol_token', response.data.token);
       localStorage.setItem('userInfo', JSON.stringify(response.data));
 
       // Dispatch auth change event for Navbar update

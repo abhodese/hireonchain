@@ -10,12 +10,19 @@ export function WalletButton() {
   const navigate = useNavigate();
 
   const handleWalletClick = async (walletName: string) => {
-    const wallet = wallets.find(w => w.adapter.name === walletName);
-    if (wallet) {
-      select(wallet.adapter.name);
+    try {
+      const wallet = wallets.find(w => w.adapter.name === walletName);
+      if (wallet) {
+        select(wallet.adapter.name);
+        // Wait a bit for the wallet to be selected
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      await connect();
+      setShowModal(false);
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+      setShowModal(false);
     }
-    await connect();
-    setShowModal(false);
   };
 
   const handleDisconnect = () => {

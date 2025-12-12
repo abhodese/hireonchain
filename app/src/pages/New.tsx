@@ -117,7 +117,7 @@ const New: React.FC = () => {
       };
 
       const response = await api.post('/api/auth/register', userData);
-      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('sol_token', response.data.token);
       localStorage.setItem('userInfo', JSON.stringify(response.data));
       window.dispatchEvent(new Event('auth-change'));
       navigate('/dashboard');

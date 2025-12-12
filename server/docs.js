@@ -78,8 +78,8 @@ function generateSwaggerSpec(routes) {
 }
 
 async function main() {
-  const rootDir = path.resolve(__dirname, '..');
-  const files = await glob(`${rootDir}/server/{routes,controllers}/*.js`);
+  const rootDir = path.resolve(__dirname);
+  const files = await glob(`${rootDir}/{routes,controllers}/*.js`);
 
   let allRoutes = [];
 
@@ -87,9 +87,9 @@ async function main() {
     const content = fs.readFileSync(file, 'utf8');
     allRoutes = allRoutes.concat(extractRoutes(content, file));
   }
-
   const spec = generateSwaggerSpec(allRoutes);
-  fs.writeFileSync(path.join(__dirname, 'swagger.json'), JSON.stringify(spec, null, 2));
+
+  fs.writeFileSync(path.join(__dirname, 'docs', 'swagger.json'), JSON.stringify(spec, null, 2));
   console.log(`✓ Generated docs for ${allRoutes.length} routes`);
 }
 

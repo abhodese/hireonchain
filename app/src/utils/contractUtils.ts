@@ -4,7 +4,7 @@ import { createEscrowAccount, releaseEscrow } from './solana';
 
 // Set up axios with auth token
 const getAuthConfig = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('sol_token');
   return {
     headers: {
       Authorization: `Bearer ${token}`,
