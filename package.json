@@ -7,7 +7,8 @@
     "prepare": "simple-git-hooks",
     "dev": "concurrently \"npm run dev:app\" \"npm run dev:server\"",
     "dev:app": "cd app && npm run dev",
-    "dev:server": "cd server && npm run dev"
+    "dev:server": "cd server && npm run dev",
+    "preview": "cd app && vercel --prod"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"

@@ -5,9 +5,8 @@
   "scripts": {
     "start": "node server.js",
     "start:api": "nodemon server.js",
-    "start:docs": "node docs.js",
-    "dev": "npm run start:docs && npm run start:api",
-    "deploy": "vercel --prod"
+    "start:docs": "node swagger.js",
+    "dev": "npm run start:docs && npm run start:api"
   },
   "keywords": [],
   "author": "",
