@@ -15,7 +15,7 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="hidden md:flex bg-primary-50 shadow-lg mb-12 top-0">
+      <nav className="hidden md:flex bg-primary-50 shadow-lg mb-12">
         <div className="w-screen px-4 sm:px-6 lg:px-8 flex justify-between h-16">
           <NavLink
             to="/"
@@ -129,7 +129,7 @@ const Navbar: React.FC = () => {
 
             {/* Hamburger Button */}
             <button
-              onClick={() => setIsMobileMenuOpen(isMobileMenuOpen ? false : true)}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 rounded-md text-gray-600 hover:text-primary-600 hover:bg-gray-100 focus:outline-none"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

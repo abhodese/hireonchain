@@ -27,7 +27,7 @@ const Register: React.FC = () => {
 
   // Check if wallet is isConnected
   useEffect(() => {
-    if (address) {
+    if (address && isConnected) {
       const shortAddress = `${address.toString().slice(0, 4)}...${address.toString().slice(-4)}`;
       setWalletMessage(`Wallet isConnected: ${shortAddress}`);
       setErrors(prev => ({ ...prev, general: '' }));
@@ -121,6 +121,7 @@ const Register: React.FC = () => {
 
     setIsSubmitting(false);
   };
+
   return (
     <>
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
