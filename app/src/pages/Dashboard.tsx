@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
 import api from '../utils/api';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 interface Job {
   _id: string;
@@ -35,7 +35,7 @@ interface Contract {
 }
 
 const Dashboard: React.FC = () => {
-  const { publicKey } = useWallet();
+  const { address } = useAppKitAccount();
   const [userRole, setUserRole] = useState<string>('');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -138,12 +138,12 @@ const Dashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-secondary-900">Dashboard</h1>
-          {publicKey && (
+          {address && (
             <div className="mt-2 text-sm text-secondary-600">
               Connected wallet:{' '}
               <span className="font-medium">
-                {publicKey.toString().slice(0, 4)}...
-                {publicKey.toString().slice(-4)}
+                {address.toString().slice(0, 4)}...
+                {address.toString().slice(-4)}
               </span>
             </div>
           )}

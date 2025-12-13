@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import api from '../utils/api';
 import { createContract } from '../utils/contractUtils';
+import { WalletButton } from '../components/WalletButton';
+import { walletAdapter } from '../utils/adapter';
+import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
 
 interface Proposal {
   _id: string;
@@ -45,7 +46,8 @@ interface Job {
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const wallet = useWallet();
+  const { walletProvider } = useAppKitProvider('solana');
+  const { address, isConnected } = useAppKitAccount();
 
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,7 @@ const JobDetail: React.FC = () => {
   const handleProposalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!wallet.connected || !wallet.publicKey) {
+    if (!isConnected || !address) {
       setProposalError('Please connect your wallet first');
       return;
     }
@@ -110,7 +112,7 @@ const JobDetail: React.FC = () => {
     setProposalError('');
 
     try {
-      const response = await api.post(`/api/jobs/${id}/proposals`, {
+      await api.post(`/api/jobs/${id}/proposals`, {
         proposal: proposalText,
         price: parseFloat(proposalPrice),
       });
@@ -159,7 +161,13 @@ const JobDetail: React.FC = () => {
     setContractError('');
 
     try {
-      const result = await createContract(job._id, contractAddress, job.price, wallet);
+      const adapter = walletAdapter(walletProvider, address);
+
+      if (!adapter || !adapter.publicKey) {
+        throw new Error('Missing public key');
+      }
+
+      const result = await createContract(job._id, contractAddress, job.price, adapter);
 
       if (result.success) {
         // Refresh job data
@@ -230,15 +238,15 @@ const JobDetail: React.FC = () => {
             )}
           </div>
 
-          {!wallet.connected && (
+          {!isConnected && (
             <div className="wallet-connection">
               <p>Connect your wallet to interact with this job</p>
-              <WalletMultiButton />
+              <WalletButton />
             </div>
           )}
 
           {/* Contract creation section for assigned jobs */}
-          {wallet.connected &&
+          {isConnected &&
             job.status === 'in_progress' &&
             !job.contractAddress &&
             (isOwner || isAssigned) && (
@@ -288,57 +296,54 @@ const JobDetail: React.FC = () => {
           )}
 
           {/* Submit proposal form for freelancers */}
-          {wallet.connected &&
-            userRole === 'freelancer' &&
-            job.status === 'open' &&
-            !hasProposed && (
-              <div className="proposal-section">
-                <h2>Submit a Proposal</h2>
+          {isConnected && userRole === 'freelancer' && job.status === 'open' && !hasProposed && (
+            <div className="proposal-section">
+              <h2>Submit a Proposal</h2>
 
-                {proposalSuccess ? (
-                  <div className="success-message">
-                    Your proposal has been submitted successfully!
+              {proposalSuccess ? (
+                <div className="success-message">
+                  Your proposal has been submitted successfully!
+                </div>
+              ) : (
+                <form onSubmit={handleProposalSubmit} className="proposal-form">
+                  <div className="form-group">
+                    <label htmlFor="proposalText">Your Proposal</label>
+                    <textarea
+                      id="proposalText"
+                      value={proposalText}
+                      onChange={e => setProposalText(e.target.value)}
+                      placeholder="Describe how you can help with this project..."
+                      rows={6}
+                      required
+                    />
                   </div>
-                ) : (
-                  <form onSubmit={handleProposalSubmit} className="proposal-form">
-                    <div className="form-group">
-                      <label htmlFor="proposalText">Your Proposal</label>
-                      <textarea
-                        id="proposalText"
-                        value={proposalText}
-                        onChange={e => setProposalText(e.target.value)}
-                        placeholder="Describe how you can help with this project..."
-                        rows={6}
-                        required
-                      />
-                    </div>
 
-                    <div className="form-group">
-                      <label htmlFor="proposalPrice">Your Price (SOL)</label>
-                      <input
-                        type="number"
-                        id="proposalPrice"
-                        value={proposalPrice}
-                        onChange={e => setProposalPrice(e.target.value)}
-                        step="0.01"
-                        min="0"
-                        required
-                      />
-                    </div>
+                  <div className="form-group">
+                    <label htmlFor="proposalPrice">Your Price (SOL)</label>
+                    <input
+                      type="number"
+                      id="proposalPrice"
+                      value={proposalPrice}
+                      onChange={e => setProposalPrice(e.target.value)}
+                      step="0.01"
+                      min="0"
+                      required
+                    />
+                  </div>
 
-                    {proposalError && <div className="error-message">{proposalError}</div>}
+                  {proposalError && <div className="error-message">{proposalError}</div>}
 
-                    <button
-                      type="submit"
-                      disabled={submittingProposal}
-                      className="submit-proposal-btn"
-                    >
-                      {submittingProposal ? 'Submitting...' : 'Submit Proposal'}
-                    </button>
-                  </form>
-                )}
-              </div>
-            )}
+                  <button
+                    type="submit"
+                    disabled={submittingProposal}
+                    className="submit-proposal-btn"
+                  >
+                    {submittingProposal ? 'Submitting...' : 'Submit Proposal'}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="job-sidebar">

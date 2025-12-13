@@ -1,24 +1,22 @@
-import React, { FC, useEffect, useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useAppKitAccount, useWalletInfo } from '@reown/appkit/react';
+import { FC, useEffect, useState } from 'react';
+import { WalletButton } from './WalletButton';
 
 interface WalletRegistrationProps {
-  onWalletConnected: (walletAddress: string) => void;
+  onWalletisConnected: (walletAddress: string) => void;
 }
 
-const WalletRegistration: FC<WalletRegistrationProps> = ({ onWalletConnected }) => {
-  const { publicKey, connected, wallet } = useWallet();
-  const [walletAddress, setWalletAddress] = useState<string>('');
+const WalletRegistration: FC<WalletRegistrationProps> = ({ onWalletisConnected }) => {
+  const { address, isConnected } = useAppKitAccount();
+  const { walletInfo } = useWalletInfo();
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    if (connected && publicKey) {
-      const address = publicKey.toString();
-      setWalletAddress(address);
+    if (isConnected && address) {
       setError('');
-      onWalletConnected(address);
+      onWalletisConnected(address);
     }
-  }, [connected, publicKey, onWalletConnected]);
+  }, [isConnected, address, onWalletisConnected]);
 
   // Add listener for wallet connection errors
   useEffect(() => {
@@ -45,21 +43,22 @@ const WalletRegistration: FC<WalletRegistrationProps> = ({ onWalletConnected }) 
       )}
 
       <div className="wallet-connect-container">
-        <WalletMultiButton />
+        <WalletButton />
       </div>
 
-      {connected && wallet && (
-        <div className="wallet-status connected">
+      {isConnected && address && (
+        <div className="wallet-status isConnected">
           <p>
-            <span className="success-icon">✓</span> Wallet connected: {walletAddress.slice(0, 4)}...
-            {walletAddress.slice(-4)}
+            <span className="success-icon">✓</span> Wallet isConnected: {address.slice(0, 4)}
+            ...
+            {address.slice(-4)}
           </p>
-          <p className="text-sm text-gray-600">Using: {wallet.adapter.name}</p>
+          <p className="text-sm text-gray-600">{walletInfo && walletInfo.name}</p>
         </div>
       )}
 
-      {!connected && (
-        <div className="wallet-status not-connected">
+      {!isConnected && (
+        <div className="wallet-status not-isConnected">
           <p>
             <span className="warning-icon">!</span> Please connect your wallet to continue
           </p>

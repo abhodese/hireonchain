@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import api from '../utils/api';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { WalletButton } from '../components/WalletButton';
 
 interface Job {
   _id: string;
@@ -20,7 +20,7 @@ interface Job {
 }
 
 const JobList: React.FC = () => {
-  const { connected } = useWallet();
+  const { isConnected } = useAppKitAccount();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,10 +107,10 @@ const JobList: React.FC = () => {
         <div className="job-list-header">
           <h1>Available Jobs</h1>
 
-          {!connected && (
+          {!isConnected && (
             <div className="wallet-connection-message">
               <p>Connect your wallet to apply for jobs</p>
-              <WalletMultiButton />
+              <WalletButton />
             </div>
           )}
         </div>

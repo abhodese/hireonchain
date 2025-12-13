@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
 
 import { WalletButton } from '../components/WalletButton';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 const Home: React.FC = () => {
-  const { connected } = useWallet();
+  const { isConnected } = useAppKitAccount();
 
   return (
     <>
@@ -25,7 +25,7 @@ const Home: React.FC = () => {
           </p>
 
           <div className="mt-10 flex flex-col items-center max-w-md mx-auto">
-            {!connected ? (
+            {!isConnected ? (
               <div className="bg-primary-50 rounded-xl p-6 shadow-xl mx-auto w-full">
                 <p className="text-secondary-600 mb-4 text-center text-lg">
                   Connect your wallet to get started
@@ -60,7 +60,7 @@ const Home: React.FC = () => {
       </div>
 
       {/* Features Section */}
-      <div className="py-16">
+      <div className="py-16 mb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-secondary-900 mb-12">
             Why Choose Our Platform?

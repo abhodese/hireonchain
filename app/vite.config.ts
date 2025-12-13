@@ -23,7 +23,4 @@ export default defineConfig({
       url: 'url',
     },
   },
-  server: {
-    port: 3000,
-  },
 });

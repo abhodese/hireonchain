@@ -1,6 +1,6 @@
 import axios from 'axios';
-import type { WalletContextState } from '@solana/wallet-adapter-react';
 import { createEscrowAccount, releaseEscrow } from './solana';
+import { PublicKey, Transaction } from '@solana/web3.js';
 
 // Set up axios with auth token
 const getAuthConfig = () => {
@@ -12,14 +12,23 @@ const getAuthConfig = () => {
   };
 };
 
+interface WalletAdapter {
+  publicKey: PublicKey | null;
+  signTransaction: (transaction: Transaction) => Promise<Transaction>;
+}
+
 // Create a new contract
 export const createContract = async (
   jobId: string,
   freelancerAddress: string,
   amount: number,
-  wallet: WalletContextState
+  wallet: WalletAdapter
 ) => {
   try {
+    if (!wallet.publicKey) {
+      throw new Error('Missing public key');
+    }
+
     // First, create the escrow account
     const escrowResult = await createEscrowAccount(wallet, freelancerAddress, amount);
 
@@ -85,7 +94,7 @@ export const getContractById = async (contractId: string) => {
 };
 
 // Fund a contract using Phantom wallet
-export const fundContract = async (wallet: WalletContextState, contract: any, amount: number) => {
+export const fundContract = async (wallet: WalletAdapter, contract: any, amount: number) => {
   try {
     // First, make the Solana transaction
     const escrowResult = await createEscrowAccount(wallet, contract.freelancer, amount);
@@ -121,7 +130,7 @@ export const fundContract = async (wallet: WalletContextState, contract: any, am
 // Complete a contract (client only)
 export const completeContract = async (
   contractId: string,
-  wallet: WalletContextState,
+  wallet: WalletAdapter,
   contract: any
 ) => {
   try {

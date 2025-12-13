@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
 import api from '../utils/api';
 import axios from 'axios';
 import { WalletButton } from '../components/WalletButton';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { connected, publicKey } = useWallet();
+  const { isConnected, address } = useAppKitAccount();
 
   const [formData, setFormData] = useState({
     username: '',
@@ -16,7 +16,7 @@ const Register: React.FC = () => {
     confirmPassword: '',
     walletAddress: '',
     role: 'client',
-    skills: '',
+    skills: [],
     bio: '',
   });
 
@@ -25,18 +25,16 @@ const Register: React.FC = () => {
   const [apiError, setApiError] = useState('');
   const [walletMessage, setWalletMessage] = useState('');
 
-  // Check if wallet is connected
+  // Check if wallet is isConnected
   useEffect(() => {
-    if (connected && publicKey) {
-      const shortAddress = `${publicKey.toString().slice(0, 4)}...${publicKey
-        .toString()
-        .slice(-4)}`;
-      setWalletMessage(`Wallet connected: ${shortAddress}`);
+    if (address) {
+      const shortAddress = `${address.toString().slice(0, 4)}...${address.toString().slice(-4)}`;
+      setWalletMessage(`Wallet isConnected: ${shortAddress}`);
       setErrors(prev => ({ ...prev, general: '' }));
     } else {
       setWalletMessage('');
     }
-  }, [connected, publicKey]);
+  }, [isConnected, address]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -80,8 +78,8 @@ const Register: React.FC = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (!formData.walletAddress) {
-      newErrors.walletAddress = 'Wallet address is required. Please connect your wallet.';
+    if (address) {
+      setFormData(prevData => ({ ...prevData, walletAddress: address }));
     }
 
     if (formData.role === 'freelancer' && !formData.skills.trim()) {
@@ -94,7 +92,9 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.dir(formData);
 
+    console.log('1');
     if (!validateForm()) {
       return;
     }
@@ -103,20 +103,10 @@ const Register: React.FC = () => {
     setApiError('');
 
     try {
-      const userData = {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        walletAddress: formData.walletAddress,
-        role: formData.role,
-        skills:
-          formData.role === 'freelancer'
-            ? formData.skills.split(',').map(skill => skill.trim())
-            : [],
-        bio: formData.bio,
-      };
-
-      const response = await api.post('/api/auth/register', userData);
+      const response = await api.post('/api/auth/register', {
+        ...formData,
+        walletAddress: address,
+      });
       localStorage.setItem('sol_token', response.data.token);
       localStorage.setItem('userInfo', JSON.stringify(response.data));
       window.dispatchEvent(new Event('auth-change'));
@@ -154,7 +144,7 @@ const Register: React.FC = () => {
             </p>
 
             <div className="flex justify-center mb-4">
-              {!connected && <WalletButton />}
+              {!isConnected && <WalletButton />}
 
               {walletMessage && (
                 <div className="bg-accent-50 border border-accent-200 rounded-lg p-3 text-accent-700 flex items-center">
@@ -362,9 +352,8 @@ const Register: React.FC = () => {
                 <div>
                   <button
                     type="submit"
-                    disabled={isSubmitting || !connected}
                     className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                      isSubmitting || !connected
+                      isSubmitting || !isConnected
                         ? 'bg-indigo-300 cursor-not-allowed'
                         : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                     }`}

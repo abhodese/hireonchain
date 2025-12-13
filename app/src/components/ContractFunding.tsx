@@ -1,9 +1,9 @@
-import React, { FC, useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { FC, useState, useEffect } from 'react';
 import { fundContract } from '../utils/contractUtils';
 import { getBalance } from '../utils/solana';
+import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
+import { walletAdapter } from '../utils/adapter';
+import { WalletButton } from './WalletButton';
 
 interface ContractFundingProps {
   contract: any;
@@ -11,8 +11,8 @@ interface ContractFundingProps {
 }
 
 const ContractFunding: FC<ContractFundingProps> = ({ contract, onSuccess }) => {
-  const { publicKey, connected } = useWallet();
-  const wallet = useWallet();
+  const { address, isConnected } = useAppKitAccount();
+  const { walletProvider } = useAppKitProvider('solana');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,20 +22,20 @@ const ContractFunding: FC<ContractFundingProps> = ({ contract, onSuccess }) => {
   // Amount to be funded is the contract amount
   const amount = contract?.amount || 0;
 
-  // Get wallet balance when connected
+  // Get wallet balance when isConnected
   useEffect(() => {
     const checkBalance = async () => {
-      if (connected && publicKey) {
-        const userBalance = await getBalance(publicKey.toString());
+      if (isConnected && address) {
+        const userBalance = await getBalance(address.toString());
         setBalance(userBalance);
       }
     };
 
     checkBalance();
-  }, [connected, publicKey]);
+  }, [isConnected, address]);
 
   const handleFund = async () => {
-    if (!connected || !publicKey) {
+    if (!isConnected || !address) {
       setError('Please connect your wallet first');
       return;
     }
@@ -49,7 +49,13 @@ const ContractFunding: FC<ContractFundingProps> = ({ contract, onSuccess }) => {
     setError('');
 
     try {
-      const result = await fundContract(wallet, contract, amount);
+      const adapter = walletAdapter(walletProvider, address);
+
+      if (!adapter || !adapter.publicKey) {
+        throw new Error('Missing public key');
+      }
+
+      const result = await fundContract(adapter, contract, amount);
 
       if (result.success) {
         setSuccess(true);
@@ -69,10 +75,10 @@ const ContractFunding: FC<ContractFundingProps> = ({ contract, onSuccess }) => {
     <div className="contract-funding">
       <h3>Fund Contract</h3>
 
-      {!connected ? (
+      {!isConnected ? (
         <div className="wallet-connection">
           <p>Please connect your wallet to fund this contract</p>
-          <WalletMultiButton />
+          <WalletButton />
         </div>
       ) : (
         <div className="funding-info">

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
 import api from '../utils/api';
 import axios from 'axios';
 
 import { WalletButton } from '../components/WalletButton';
 import { useWalletAuth } from '../hooks/useWalletAuth';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 interface FormErrors {
   email?: string;
@@ -15,7 +15,7 @@ interface FormErrors {
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { connected, publicKey } = useWallet();
+  const { isConnected, address } = useAppKitAccount();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -27,18 +27,16 @@ const Login: React.FC = () => {
   const [apiError, setApiError] = useState('');
   const { authenticateWallet, isAuthenticating } = useWalletAuth();
 
-  // Check if wallet is connected
+  // Check if wallet is isConnected
   useEffect(() => {
-    if (connected && publicKey) {
-      const shortAddress = `${publicKey.toString().slice(0, 4)}...${publicKey
-        .toString()
-        .slice(-4)}`;
-      setWalletMessage(`Wallet connected: ${shortAddress}`);
+    if (isConnected && address) {
+      const shortAddress = `${address.toString().slice(0, 4)}...${address.toString().slice(-4)}`;
+      setWalletMessage(`Wallet isConnected: ${shortAddress}`);
       setErrors(prev => ({ ...prev, general: '' }));
     } else {
       setWalletMessage('');
     }
-  }, [connected, publicKey]);
+  }, [isConnected, address]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,7 +81,7 @@ const Login: React.FC = () => {
     setErrors({});
 
     // Check wallet connection first
-    if (!connected || !publicKey) {
+    if (!isConnected || !address) {
       setErrors({
         general: 'Please connect your Solana wallet before logging in',
       });
@@ -108,10 +106,10 @@ const Login: React.FC = () => {
       }
 
       // Verify if the wallet address matches
-      const connectedWallet = publicKey.toString();
-      if (response.data.walletAddress !== connectedWallet) {
+      const isConnectedWallet = address.toString();
+      if (response.data.walletAddress !== isConnectedWallet) {
         setApiError(
-          'The connected wallet does not match your account wallet. Please disconnect and connect the correct wallet.'
+          'The isConnected wallet does not match your account wallet. Please disconnect and connect the correct wallet.'
         );
         return;
       }
@@ -178,7 +176,7 @@ const Login: React.FC = () => {
             </p>
 
             <div className="flex justify-center mb-4">
-              {!connected && <WalletButton />}
+              {!isConnected && <WalletButton />}
 
               {walletMessage && (
                 <div className="bg-accent-50 border border-accent-200 rounded-lg p-3 text-accent-700 flex items-center">
@@ -277,9 +275,9 @@ const Login: React.FC = () => {
 
                 <button
                   type="submit"
-                  disabled={isAuthenticating || !connected}
+                  disabled={isAuthenticating || !isConnected}
                   className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                    isAuthenticating || !connected
+                    isAuthenticating || !isConnected
                       ? 'bg-indigo-300 cursor-not-allowed'
                       : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                   }`}

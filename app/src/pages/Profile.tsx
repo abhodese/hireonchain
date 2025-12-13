@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
 import { getBalance } from '../utils/solana';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { WalletButton } from '../components/WalletButton';
 import { ProfileModal } from '../components/ProfileModal';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 export interface UserProfile {
   _id: string;
@@ -29,7 +29,7 @@ export interface UserProfile {
 }
 
 const Profile: React.FC = () => {
-  const { publicKey, connected } = useWallet();
+  const { address, isConnected } = useAppKitAccount();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
@@ -46,7 +46,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        if (!publicKey) {
+        if (!address) {
           toast.error('Error fetching profile');
           return;
         }
@@ -73,13 +73,13 @@ const Profile: React.FC = () => {
     if (loading || !editMode) {
       fetchProfile();
     }
-  }, [loading, publicKey, editMode]);
+  }, [loading, address, editMode]);
 
   useEffect(() => {
     const fetchBalance = async () => {
-      if (connected && publicKey) {
+      if (isConnected && address) {
         try {
-          const solBalance = await getBalance(publicKey.toString());
+          const solBalance = await getBalance(address.toString());
           setBalance(solBalance);
         } catch (error) {
           console.error('Error fetching balance:', error);
@@ -88,7 +88,7 @@ const Profile: React.FC = () => {
     };
 
     fetchBalance();
-  }, [connected, publicKey]);
+  }, [isConnected, address]);
 
   if (loading) {
     return (
@@ -118,7 +118,7 @@ const Profile: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-primary-600 mb-4">Your Profile</h1>
 
-          {!connected && (
+          {!isConnected && (
             <div className="bg-primary-500/20 border border-primary-500/30 rounded-xl p-4 flex items-center justify-between">
               <p className="text-primary-200">Connect your wallet to view your balance</p>
               <WalletButton />
@@ -130,7 +130,7 @@ const Profile: React.FC = () => {
           {/* Sidebar */}
           <div className="flex w-lg max-w-2xl flex-col space-y-6">
             {/* Wallet Information */}
-            {connected && formData.walletAddress && (
+            {isConnected && formData.walletAddress && (
               <div className="flex flex-col border-2 border-primary-100 rounded-xl p-6 shadow-xl">
                 <h2 className="text-xl font-semibold text-primary-600 mb-4">Wallet Information</h2>
 
@@ -143,7 +143,7 @@ const Profile: React.FC = () => {
                   </div>
 
                   <div className="font-">
-                    {publicKey && publicKey.toBase58() === formData.walletAddress ? (
+                    {address === formData.walletAddress ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-500/20 text-accent-600 font-semibold text-sm">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path
@@ -152,11 +152,11 @@ const Profile: React.FC = () => {
                             clipRule="evenodd"
                           />
                         </svg>
-                        Wallet connected
+                        Wallet isConnected
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-500/20 text-yellow-400 text-sm">
-                        ⚠️ Connected wallet doesn't match profile
+                        ⚠️ isConnected wallet doesn't match profile
                       </span>
                     )}
                   </div>

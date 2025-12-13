@@ -7,11 +7,15 @@ const getSolanaConnection = () => {
 };
 
 // Validate a Solana wallet address
+const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
 const isValidSolanaAddress = address => {
+  console.log(address);
+  if (!address || !SOLANA_ADDRESS_REGEX.test(address)) return false;
   try {
     new PublicKey(address);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

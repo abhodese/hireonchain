@@ -1,10 +1,10 @@
-// src/contexts/AuthContext.tsx
-
 import { createContext, useReducer, useCallback, useEffect, ReactNode } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import bs58 from 'bs58';
 import api from '../utils/api';
 import { authReducer, initialAuthState, AuthState } from './AuthReducter';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { useAppKitProvider, useDisconnect } from '@reown/appkit/react';
+import type { Provider } from '@reown/appkit-adapter-solana';
+import toast from 'react-hot-toast';
 
 interface ChallengeResponse {
   message: string;
@@ -29,62 +29,56 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { publicKey, signMessage, connected, disconnect } = useWallet();
+  const { address, isConnected } = useAppKitAccount();
+  const { disconnect } = useDisconnect();
+  const { walletProvider } = useAppKitProvider<Provider>('solana');
   const [state, dispatch] = useReducer(authReducer, initialAuthState);
 
   // Check for existing session on mount
   useEffect(() => {
     const walletVerified = localStorage.getItem('wallet_verified');
 
-    if (walletVerified === 'true' && connected && publicKey) {
+    if (walletVerified === 'true' && isConnected && address) {
       dispatch({
         type: 'AUTH_SUCCESS',
-        payload: { publicKey: publicKey.toBase58() },
+        payload: { publicKey: address },
       });
     }
-  }, [connected, publicKey]);
+  }, [isConnected, address]);
 
   const authenticateWallet = useCallback(async (): Promise<boolean> => {
-    if (!publicKey || !signMessage) {
-      dispatch({
-        type: 'AUTH_FAILURE',
-        payload: 'Wallet not connected or does not support signing',
-      });
-      return false;
-    }
-
-    dispatch({ type: 'AUTH_START' });
-
     try {
-      // Step 1: Request challenge
+      if (!walletProvider || !address) {
+        throw new Error('user is disconnected');
+      }
+
+      // 2. Encode message and sign it
       const challengeResponse = await api.post<ChallengeResponse>('/api/auth/challenge', {
-        publicKey: publicKey.toBase58(),
+        publicKey: address,
       });
 
       const { nonce, message } = challengeResponse.data;
 
-      // Step 2: Sign message
       const encodedMessage = new TextEncoder().encode(message);
-      const signatureBytes = await signMessage(encodedMessage);
-      const signature = bs58.encode(signatureBytes);
+      const signature = await walletProvider.signMessage(encodedMessage);
 
       // Step 3: Verify signature
-      const verifyResponse = await api.post<VerifyResponse>('/api/auth/sign', {
-        publicKey: publicKey.toBase58(),
+      const { data } = await api.post<VerifyResponse>('/api/auth/sign', {
+        publicKey: address,
         signature,
         nonce,
       });
 
-      if (verifyResponse.data.success) {
-        const publicKeyStr = publicKey.toBase58();
-
+      if (data.success) {
         // Persist auth state
         localStorage.setItem('wallet_verified', 'true');
 
         dispatch({
           type: 'AUTH_SUCCESS',
-          payload: { publicKey: publicKeyStr },
+          payload: { publicKey: address },
         });
+
+        toast.success('Verification successful');
 
         return true;
       }
@@ -93,25 +87,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         type: 'AUTH_FAILURE',
         payload: 'Verification failed',
       });
+
+      toast.error('verification failed');
+
       return false;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || err.message || 'Authentication failed';
-      dispatch({
-        type: 'AUTH_FAILURE',
-        payload: errorMessage,
-      });
+    } catch (err) {
+      toast.error('Verification failed');
+      console.log(err);
       return false;
     }
-  }, [publicKey, signMessage]);
+  }, [walletProvider, address]);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     localStorage.clear();
 
     dispatch({ type: 'AUTH_LOGOUT' });
-    if (connected) {
-      disconnect();
+    if (isConnected) {
+      await disconnect();
     }
-  }, [connected, disconnect]);
+  }, [isConnected, disconnect]);
 
   const clearError = useCallback(() => {
     dispatch({ type: 'CLEAR_ERROR' });

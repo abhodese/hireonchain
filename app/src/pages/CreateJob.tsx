@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import api from '../utils/api';
+import { WalletButton } from '../components/WalletButton';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 const CreateJob: React.FC = () => {
   const navigate = useNavigate();
-  const { publicKey, connected } = useWallet();
+  const { address, isConnected } = useAppKitAccount();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -72,7 +72,7 @@ const CreateJob: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!connected || !publicKey) {
+    if (!isConnected || !address) {
       setSubmitError('Please connect your wallet first');
       return;
     }
@@ -117,10 +117,10 @@ const CreateJob: React.FC = () => {
     <div className="create-job-page">
       <h1>Post a New Job</h1>
 
-      {!connected ? (
+      {!isConnected ? (
         <div className="wallet-connection">
           <p>Please connect your wallet to post a job</p>
-          <WalletMultiButton />
+          <WalletButton />
         </div>
       ) : (
         <div className="job-form-container">
@@ -196,9 +196,9 @@ const CreateJob: React.FC = () => {
 
             <div className="wallet-info">
               <p>
-                <strong>Connected Wallet:</strong>{' '}
-                {publicKey
-                  ? `${publicKey.toString().slice(0, 6)}...${publicKey.toString().slice(-4)}`
+                <strong>isConnected Wallet:</strong>{' '}
+                {address
+                  ? `${address.toString().slice(0, 6)}...${address.toString().slice(-4)}`
                   : ''}
               </p>
               <p className="wallet-note">This wallet will be associated with your job posting.</p>

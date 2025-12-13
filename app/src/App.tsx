@@ -1,25 +1,17 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TorusWalletAdapter,
-} from '@solana/wallet-adapter-wallets';
-import { clusterApiUrl } from '@solana/web3.js';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import PrivateRoute from './components/PrivateRoute';
 
-// Import wallet adapter styles
-import '@solana/wallet-adapter-react-ui/styles.css';
 // Temp page and layout components
-import New from './pages/New';
 import { Toaster } from 'react-hot-toast';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Layout } from './layout';
 import { Loading } from './components/Loading';
 import { AuthProvider } from './contexts/AuthProvider';
+import { ReownProvider } from './contexts/AppKitProvider';
+import PrivateRoute from './components/PrivateRoute';
+import { createAppKit } from '@reown/appkit/react';
+import { solanaDevnet } from '@reown/appkit/networks';
+import { SolanaAdapter } from '@reown/appkit-adapter-solana/react';
 
 // Lazy load to optimize
 const Home = lazy(() => import('./pages/Home'));
@@ -31,79 +23,83 @@ const JobDetail = lazy(() => import('./pages/JobDetail'));
 const CreateJob = lazy(() => import('./pages/CreateJob'));
 const Profile = lazy(() => import('./pages/Profile'));
 
+const solanaWeb3JsAdapter = new SolanaAdapter();
+const projectId = import.meta.env.VITE_PROJECT_ID as string;
+
+const metadata = {
+  name: 'Solana Freelance',
+  description: 'Connect, Work, and Get Paid with Crypto',
+  url: 'https://sol-marketplace-1.vercel.app', // origin must match your domain & subdomain
+  icons: ['https://sol-marketplace-1.vercel.app/sol.png'],
+};
+
+createAppKit({
+  adapters: [solanaWeb3JsAdapter],
+  networks: [solanaDevnet],
+  metadata: metadata,
+  projectId,
+  features: {
+    analytics: false,
+  },
+});
+
 function App() {
-  // Set up Solana network connection (devnet for testing)
-  const network = WalletAdapterNetwork.Devnet;
-  const endpoint = clusterApiUrl(network);
-
-  // Initialize wallet adapters
-  const wallets = [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
-    new TorusWalletAdapter(),
-  ];
-
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          <AuthProvider>
-            <Router>
-              <Layout>
-                <Suspense fallback={<Loading />}>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/new" element={<New />} />
+    <ReownProvider>
+      <AuthProvider>
+        <Router>
+          <Layout>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
 
-                    {/* Private routes that require authentication */}
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <PrivateRoute>
-                          <Dashboard />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/profile"
-                      element={
-                        <PrivateRoute>
-                          <Profile />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/jobs/create"
-                      element={
-                        <PrivateRoute>
-                          <CreateJob />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route path="/jobs" element={<JobList />} />
-                    <Route
-                      path="/jobs/:id"
-                      element={
-                        <PrivateRoute>
-                          <JobDetail />
-                        </PrivateRoute>
-                      }
-                    />
+                {/* Private routes that require authentication */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <PrivateRoute>
+                      <Dashboard />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <PrivateRoute>
+                      <Profile />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/jobs/create"
+                  element={
+                    <PrivateRoute>
+                      <CreateJob />
+                    </PrivateRoute>
+                  }
+                />
+                <Route path="/jobs" element={<JobList />} />
+                <Route
+                  path="/jobs/:id"
+                  element={
+                    <PrivateRoute>
+                      <JobDetail />
+                    </PrivateRoute>
+                  }
+                />
 
-                    {/* Fallback route */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Suspense>
-                <ScrollToTop />
-              </Layout>
-            </Router>
-          </AuthProvider>
-          <Toaster position="top-center" />
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+                {/* Fallback route */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+            <ScrollToTop />
+          </Layout>
+        </Router>
+      </AuthProvider>
+      <Toaster position="top-center" />
+    </ReownProvider>
   );
 }
 

@@ -9,14 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@solana/wallet-adapter-base": "0.9.27",
-    "@solana/wallet-adapter-react": "0.15.39",
-    "@solana/wallet-adapter-react-ui": "0.9.39",
-    "@solana/wallet-adapter-wallets": "0.19.37",
+    "@reown/appkit": "^1.8.15",
+    "@reown/appkit-adapter-solana": "^1.8.15",
     "@solana/web3.js": "^1.98.4",
-    "@tailwindcss/vite": "^4.1.18",
     "axios": "^1.13.2",
-    "bs58": "^6.0.0",
     "buffer": "^6.0.3",
     "https-browserify": "^1.0.0",
     "os-browserify": "^0.3.0",
@@ -31,7 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@types/bs58": "^5.0.0",
+    "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^25.0.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

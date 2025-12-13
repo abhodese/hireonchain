@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import WalletConnect from '../components/WalletConnect';
 import { useWalletAuth } from '../hooks/useWalletAuth';
+import { WalletButton } from '../components/WalletButton';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="hidden md:flex bg-primary-50 shadow-lg mb-12">
+      <nav className="hidden md:flex bg-primary-50 shadow-lg mb-12 top-0">
         <div className="w-screen px-4 sm:px-6 lg:px-8 flex justify-between h-16">
           <NavLink
             to="/"
@@ -113,7 +113,7 @@ const Navbar: React.FC = () => {
               </>
             )}
 
-            <WalletConnect />
+            <WalletButton />
           </div>
         </div>
       </nav>
@@ -129,7 +129,7 @@ const Navbar: React.FC = () => {
 
             {/* Hamburger Button */}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => setIsMobileMenuOpen(isMobileMenuOpen ? false : true)}
               className="p-2 rounded-md text-gray-600 hover:text-primary-600 hover:bg-gray-100 focus:outline-none"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -253,7 +253,7 @@ const Navbar: React.FC = () => {
               </>
             )}
             <div className="pt-4 px-3 border-t border-gray-200 mt-2">
-              <WalletConnect />
+              <WalletButton />
             </div>
           </div>
         </div>

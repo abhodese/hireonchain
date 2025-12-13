@@ -9,7 +9,11 @@ import {
   TransactionInstruction,
   Keypair,
 } from '@solana/web3.js';
-import type { WalletContextState } from '@solana/wallet-adapter-react';
+
+interface WalletAdapter {
+  publicKey: PublicKey | null;
+  signTransaction: (transaction: Transaction) => Promise<Transaction>;
+}
 
 // Create a connection to the Solana blockchain
 export const getSolanaConnection = () => {
@@ -28,7 +32,7 @@ export const getEscrowProgramId = () => {
 
 // Create an escrow account
 export const createEscrowAccount = async (
-  wallet: WalletContextState,
+  wallet: WalletAdapter,
   freelancerAddress: string,
   amount: number
 ) => {
@@ -95,7 +99,7 @@ export const createEscrowAccount = async (
 
 // Release funds from escrow
 export const releaseEscrow = async (
-  wallet: WalletContextState,
+  wallet: WalletAdapter,
   escrowAccount: string,
   freelancerAddress: string
 ) => {
