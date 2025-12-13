@@ -16,7 +16,7 @@ const Register: React.FC = () => {
     confirmPassword: '',
     walletAddress: '',
     role: 'client',
-    skills: [],
+    skills: '',
     bio: '',
   });
 
