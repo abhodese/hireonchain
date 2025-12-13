@@ -130,7 +130,7 @@ export function WalletButton() {
                         toast.success('Error copying to clipboard!');
                       }
                     }}
-                    className="p-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors flex-shrink-0"
+                    className="p-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors shrink-0"
                     title="Copy address"
                   >
                     <svg
