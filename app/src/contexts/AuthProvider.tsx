@@ -5,6 +5,7 @@ import { useAppKitAccount } from '@reown/appkit/react';
 import { useAppKitProvider, useDisconnect } from '@reown/appkit/react';
 import type { Provider } from '@reown/appkit-adapter-solana';
 import toast from 'react-hot-toast';
+import bs58 from 'bs58';
 
 interface ChallengeResponse {
   message: string;
@@ -52,7 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('user is disconnected');
       }
 
-      // 2. Encode message and sign it
       const challengeResponse = await api.post<ChallengeResponse>('/api/auth/challenge', {
         publicKey: address,
       });
@@ -62,10 +62,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await walletProvider.signMessage(encodedMessage);
 
-      // Step 3: Verify signature
+      const signatureBase58 = bs58.encode(signature);
+
       const { data } = await api.post<VerifyResponse>('/api/auth/sign', {
         publicKey: address,
-        signature,
+        signature: signatureBase58,
         nonce,
       });
 

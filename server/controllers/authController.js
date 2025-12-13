@@ -3,6 +3,7 @@ const nacl = require('tweetnacl');
 const bs58 = require('bs58').default;
 const Challenge = require('../models/Challenge');
 const User = require('../models/User');
+const { PublicKey } = require('@solana/web3.js');
 const { generateToken } = require('../utils/auth');
 const { isValidSolanaAddress } = require('../utils/solana');
 
@@ -48,6 +49,8 @@ const generateChallenge = async (req, res) => {
 const verifySignature = async (req, res) => {
   const { publicKey, signature, nonce } = req.body;
 
+  console.dir(req.body);
+
   if (!publicKey || !signature || !nonce) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -65,11 +68,14 @@ const verifySignature = async (req, res) => {
       return res.status(401).json({ error: 'Invalid or expired nonce' });
     }
 
-    // Reconstruct the message that was signed
     const message = `Please authenticate your wallet: ${nonce}`;
     const messageBytes = new TextEncoder().encode(message);
-    const signatureBytes = bs58.decode(signature);
-    const publicKeyBytes = bs58.decode(publicKey);
+
+    // Handle signature - comes as Buffer object from frontend
+    const signatureBytes =
+      signature.type === 'Buffer' ? new Uint8Array(signature.data) : bs58.decode(signature);
+
+    const publicKeyBytes = new PublicKey(publicKey).toBytes();
 
     // Verify signature
     const isValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
