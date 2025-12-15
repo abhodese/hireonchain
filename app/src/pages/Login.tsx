@@ -131,7 +131,7 @@ const Login: React.FC = () => {
 
       // Navigate to dashboard
 
-      navigate('/dashboard', { replace: true });
+      navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
 

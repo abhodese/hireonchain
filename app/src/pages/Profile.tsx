@@ -253,48 +253,52 @@ const Profile: React.FC = () => {
 
                 {/* Skills Section */}
                 {formData.role === 'freelancer' && Array.isArray(formData.skills) && (
-                  <div className="bg-secondary-800/50 backdrop-blur-sm rounded-2xl p-6 border border-secondary-700/50">
-                    <h2 className="text-2xl text-primary-400 font-semibold mb-4">Skills</h2>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.skills.map((skill, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1.5 bg-primary-500/20 border border-primary-500/30 rounded-lg text-primary-300 text-sm font-medium"
-                        >
-                          {skill}
-                        </span>
-                      ))}
+                  <div className="flex w-lg max-w-2xl flex-col space-y-6">
+                    <div className="border-2 border-primary-100 rounded-xl p-6 shadow-xl">
+                      <h2 className="text-xl font-semibold text-primary-600 mb-4">Skills</h2>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.skills.map((skill, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1.5 bg-primary-500/20 border border-primary-500/30 rounded-lg text-primary-300 text-sm font-medium"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {/* Reviews Section */}
                 {formData.role === 'freelancer' && formData.reviews && (
-                  <div className="bg-secondary-800/50 backdrop-blur-sm rounded-2xl p-6 border border-secondary-700/50">
-                    <h2 className="text-2xl text-primary-400 font-semibold mb-4">
-                      Reviews ({formData.reviews.length})
-                    </h2>
-                    <div className="space-y-4">
-                      {formData.reviews.map((review, index) => (
-                        <div
-                          key={index}
-                          className="bg-secondary-900/50 rounded-lg p-4 border border-secondary-700/30"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-semibold text-primary-400vvvvvvvvvvvvvvvvvv">
-                              {review.from.username}
-                            </span>
-                            <span className="text-yellow-400">
-                              {'★'.repeat(review.rating)}
-                              {'☆'.repeat(5 - review.rating)}
+                  <div className="flex w-lg max-w-2xl flex-col space-y-6">
+                    <div className="border-2 border-primary-100 rounded-xl p-6 shadow-xl">
+                      <h2 className="text-xl font-semibold text-primary-600 mb-4">
+                        Reviews ({formData.reviews.length})
+                      </h2>
+                      <div className="space-y-4">
+                        {formData.reviews.map((review, index) => (
+                          <div
+                            key={index}
+                            className="bg-secondary-900/50 rounded-lg p-4 border border-secondary-700/30"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-primary-400vvvvvvvvvvvvvvvvvv">
+                                {review.from.username}
+                              </span>
+                              <span className="text-yellow-400">
+                                {'★'.repeat(review.rating)}
+                                {'☆'.repeat(5 - review.rating)}
+                              </span>
+                            </div>
+                            <p className="text-secondary-300 mb-2">{review.content}</p>
+                            <span className="text-xs text-secondary-500">
+                              {new Date(review.createdAt).toLocaleDateString()}
                             </span>
                           </div>
-                          <p className="text-secondary-300 mb-2">{review.content}</p>
-                          <span className="text-xs text-secondary-500">
-                            {new Date(review.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

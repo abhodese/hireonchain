@@ -4,19 +4,31 @@ import api from '../utils/api';
 import axios from 'axios';
 import { WalletButton } from '../components/WalletButton';
 import { useAppKitAccount } from '@reown/appkit/react';
+import { useWalletAuth } from '../hooks/useWalletAuth';
+
+interface RegisterForm {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  walletAddress: string;
+  role: string;
+  skills: string[] | string;
+  bio: string;
+}
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const { isConnected, address } = useAppKitAccount();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RegisterForm>({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
     walletAddress: '',
     role: 'client',
-    skills: '',
+    skills: [],
     bio: '',
   });
 
@@ -24,6 +36,7 @@ const Register: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
   const [walletMessage, setWalletMessage] = useState('');
+  const { authenticateWallet } = useWalletAuth();
 
   // Check if wallet is isConnected
   useEffect(() => {
@@ -40,6 +53,20 @@ const Register: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    const skills = [...formData.skills];
+
+    if (name === 'skills') {
+      const skill = value.replace(',', '').trim();
+
+      skills.push(skill);
+
+      setFormData(prevData => ({
+        ...prevData,
+        skills,
+      }));
+
+      return;
+    }
 
     setFormData(prevData => ({
       ...prevData,
@@ -78,16 +105,12 @@ const Register: React.FC = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (address) {
-      setFormData(prevData => ({ ...prevData, walletAddress: address }));
-    }
-
-    if (formData.role === 'freelancer' && !formData.skills.trim()) {
+    if (formData.role === 'freelancer' && formData.skills.length < 1) {
       newErrors.skills = 'Skills are required for freelancers';
     }
 
-    if (formData.role === 'freelancer' && formData.skills.trim().length > 0) {
-      setFormData(prevData => ({ ...prevData, skills: formData.skills }));
+    if (address) {
+      setFormData(prevData => ({ ...prevData, walletAddress: address }));
     }
 
     setErrors(newErrors);
@@ -114,6 +137,15 @@ const Register: React.FC = () => {
       localStorage.setItem('sol_token', response.data.token);
       localStorage.setItem('userInfo', JSON.stringify(response.data));
       window.dispatchEvent(new Event('auth-change'));
+
+      const success = await authenticateWallet();
+
+      if (!success) {
+        setApiError('Invalid wallet signature. Please try again.');
+
+        return;
+      }
+
       navigate('/dashboard');
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
