@@ -62,6 +62,7 @@ export const authReducer = (state: AuthState, action: AuthAction): AuthState => 
     case 'AUTH_LOGOUT':
       return {
         ...initialAuthState,
+        isAuthenticated: false,
       };
 
     case 'CLEAR_ERROR':

@@ -34,13 +34,16 @@ const Profile: React.FC = () => {
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [balance, setBalance] = useState<number>(0);
-  const [formData, setFormData] = useState<Partial<UserProfile>>({
+  const [formData, setFormData] = useState<UserProfile>({
+    _id: '',
     username: '',
     email: '',
+    walletAddress: '',
     bio: '',
     skills: null,
     reviews: null,
     role: null,
+    rating: 0,
   });
 
   useEffect(() => {
@@ -51,15 +54,16 @@ const Profile: React.FC = () => {
           return;
         }
 
-        const response = await api.get<UserProfile>('/api/users/profile');
-        const profile = response.data;
+        const { data } = await api.get<UserProfile>('/api/users/profile');
+        const profile = data;
 
         setFormData({
           ...profile,
-          username: response.data.username,
-          email: response.data.email,
-          bio: response.data.bio || '',
-          skills: response.data.skills ? response.data.skills.map(skill => `${skill}, `) : [],
+          username: profile.username,
+          email: profile.email,
+          bio: profile.bio || '',
+          rating: profile.rating || 0,
+          skills: profile.skills ? profile.skills.map(skill => `${skill}, `) : [],
         });
       } catch (error) {
         console.log(error);
@@ -177,13 +181,13 @@ const Profile: React.FC = () => {
             <div className="flex w-lg max-w-2xl flex-col space-y-6"></div>
             <div className="border-2 border-primary-100 rounded-xl p-6 shadow-xl">
               <h2 className="text-xl font-semibold text-primary-600 mb-4">Account Type</h2>
-              <div className="inline-flex items-center px-4 py-2 rounded-lg bg-primary-400 border border-primary-400">
-                <span className="text-lg font-medium text-white">
+              <div className="inline-flex items-center px-4 py-2 rounded-lg border-primary-600 border-2">
+                <span className="text-lg text-primary-600 font-semibold">
                   {formData.role === 'client' ? 'Client' : 'Freelancer'}
                 </span>
               </div>
 
-              {formData?.rating && (
+              {formData.rating >= 0 && (
                 <div className="mt-4">
                   <h3 className="text-sm text-secondary-600 font-semibold mb-2">Rating</h3>
                   <div className="flex items-center gap-2">

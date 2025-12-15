@@ -10,7 +10,7 @@ const Home: React.FC = () => {
   return (
     <>
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4 ">
         <div className="text-center max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold text-primary-600 mb-4">
             Solana Freelance Platform
@@ -202,7 +202,7 @@ const Home: React.FC = () => {
       </div>
 
       {/* How It Works Section */}
-      <div className="py-16">
+      <div className="py-16 mb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-secondary-900 mb-12">How It Works</h2>
 

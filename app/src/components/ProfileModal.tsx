@@ -1,37 +1,51 @@
 import toast from 'react-hot-toast';
 import { UserProfile } from '../pages/Profile';
 import api from '../utils/api';
+import { useState } from 'react';
 
 interface ProfileProps {
-  formData: Partial<UserProfile>;
-  setFormData: React.Dispatch<React.SetStateAction<Partial<UserProfile>>>;
+  formData: UserProfile;
+  setFormData: React.Dispatch<React.SetStateAction<UserProfile>>;
   setEditMode: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProps) => {
+  const [wordCount, setWordCount] = useState(formData.bio?.length ?? 0);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (wordCount >= 300) {
+      toast.error('Bios must be under 300 characters');
+      return;
+    }
+
+    if (formData.bio.length === 0) {
+      toast.error('Bios are required');
+      return;
+    }
 
     try {
       const updateData = {
+        ...formData,
         username: formData.username,
         email: formData.email,
-        bio: formData.bio,
+        bio: formData.bio ?? '',
         skills: formData.skills ? formData.skills.map(skill => skill.trim()) : [],
       };
 
-      const response = await api.put('/api/users/profile', updateData);
-      setFormData(response.data);
+      const { data } = await api.put('/api/users/profile', updateData);
+      setFormData(data);
       setEditMode(false);
 
-      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
       localStorage.setItem(
         'userInfo',
-        JSON.stringify({
-          ...userInfo,
-          username: response.data.username,
-          email: response.data.email,
-        })
+        data.username
+          ? JSON.stringify({
+              ...updateData,
+              username: data.username,
+              email: data.email,
+            })
+          : '{}'
       );
 
       toast.success('Profile updated successfully');
@@ -43,10 +57,18 @@ export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProp
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+
+    if (name === 'bio') {
+      setWordCount(value.length);
+      if (value.length >= 300) {
+        toast.error('Bios must be under 300 characters');
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
       [name]: value,
-    });
+    }));
   };
 
   return (
@@ -105,6 +127,15 @@ export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProp
               rows={4}
               className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${'border-secondary-300'}`}
             />
+          </div>
+
+          <div>
+            <label
+              className={`block text-sm font-medium mb-1 ${wordCount >= 300 ? 'text-red-500' : 'text-secondary-900'}`}
+            >
+              <span className="text-primary-600 underline">Characters:</span>
+              {` ${wordCount} / 300`}
+            </label>
           </div>
 
           {formData.role === 'freelancer' && (

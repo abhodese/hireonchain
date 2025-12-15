@@ -13,12 +13,9 @@ export function WalletButton() {
   const [balance, setBalance] = useState(0);
   const { logout } = useWalletAuth();
 
-  const handleDisconnect = async () => {
+  const handleDisconnect = () => {
     setShowDetails(false);
     logout();
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-
     navigate('/');
   };
 
@@ -165,6 +162,7 @@ export function WalletButton() {
 
               {/* Disconnect Button */}
               <button
+                type="button"
                 onClick={handleDisconnect}
                 className="w-full bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg px-4 py-2.5 text-sm border border-red-200 transition-colors"
               >

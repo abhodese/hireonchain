@@ -3,6 +3,7 @@
 
 const User = require('../models/User');
 const { generateToken } = require('../utils/auth');
+const { isValidSolanaAddress } = require('../utils/solana');
 
 // @access  Private
 const getUserProfile = async (req, res) => {

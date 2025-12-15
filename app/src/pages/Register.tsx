@@ -86,6 +86,10 @@ const Register: React.FC = () => {
       newErrors.skills = 'Skills are required for freelancers';
     }
 
+    if (formData.role === 'freelancer' && formData.skills.trim().length > 0) {
+      setFormData(prevData => ({ ...prevData, skills: formData.skills }));
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -120,6 +124,8 @@ const Register: React.FC = () => {
     }
 
     setIsSubmitting(false);
+
+    navigate('/dashboard', { replace: true });
   };
 
   return (
