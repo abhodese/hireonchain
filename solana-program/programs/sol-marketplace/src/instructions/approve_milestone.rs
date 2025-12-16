@@ -3,7 +3,7 @@ use crate::state::{Job, Milestone, JobStatus, MilestoneStatus, seeds};
 use crate::errors::FreelanceError;
 use crate::events::MilestoneApproved;
 
-pub fn handler(ctx: Context<ApproveMilestone>) -> Result<()> {
+pub fn approve_milestone_handler(ctx: Context<ApproveMilestone>) -> Result<()> {
     let job = &ctx.accounts.job;
     let milestone = &mut ctx.accounts.milestone;
 

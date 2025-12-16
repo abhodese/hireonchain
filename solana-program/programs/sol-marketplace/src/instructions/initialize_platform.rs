@@ -1,11 +1,18 @@
 use anchor_lang::prelude::*;
 use crate::state::{PlatformConfig, seeds};
+use crate::errors::FreelanceError;
 use crate::events::PlatformConfigUpdated;
+use crate::constants::MAX_FEE_BPS;
 
-pub fn handler(
+pub fn initialize_platform_handler(
     ctx: Context<InitializePlatform>,
     fee_bps: u16,
 ) -> Result<()> {
+    require!(
+        fee_bps <= MAX_FEE_BPS,
+        FreelanceError::FeeExceedsMaximum
+    );
+
     let config = &mut ctx.accounts.platform_config;
     
     config.admin = ctx.accounts.admin.key();

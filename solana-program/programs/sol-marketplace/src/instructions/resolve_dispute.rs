@@ -3,7 +3,7 @@ use crate::state::{Job, Dispute, PlatformConfig, JobStatus, DisputeStatus, Dispu
 use crate::errors::FreelanceError;
 use crate::events::DisputeResolved;
 
-pub fn handler(ctx: Context<ResolveDispute>, ruling: DisputeRuling) -> Result<()> {
+pub fn resolve_dispute_handler(ctx: Context<ResolveDispute>, ruling: DisputeRuling) -> Result<()> {
     let job = &mut ctx.accounts.job;
     let dispute = &mut ctx.accounts.dispute;
 

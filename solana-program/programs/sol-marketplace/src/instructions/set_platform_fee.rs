@@ -2,10 +2,9 @@ use anchor_lang::prelude::*;
 use crate::state::{PlatformConfig, seeds};
 use crate::errors::FreelanceError;
 use crate::events::PlatformConfigUpdated;
+use crate::constants::MAX_FEE_BPS;
 
-pub const MAX_FEE_BPS: u16 = 1000;
-
-pub fn handler(ctx: Context<SetPlatformFee>, new_fee_bps: u16) -> Result<()> {
+pub fn set_platform_fee_handler(ctx: Context<SetPlatformFee>, new_fee_bps: u16) -> Result<()> {
     require!(
         new_fee_bps <= MAX_FEE_BPS,
         FreelanceError::FeeExceedsMaximum

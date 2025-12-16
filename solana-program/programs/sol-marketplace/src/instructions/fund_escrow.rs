@@ -4,7 +4,7 @@ use crate::state::{Job, JobStatus, seeds};
 use crate::errors::FreelanceError;
 use crate::events::JobFunded;
 
-pub fn handler(ctx: Context<FundEscrow>) -> Result<()> {
+pub fn fund_escrow_handler(ctx: Context<FundEscrow>) -> Result<()> {
     let job = &mut ctx.accounts.job;
 
     require!(
@@ -22,7 +22,7 @@ pub fn handler(ctx: Context<FundEscrow>) -> Result<()> {
     system_program::transfer(cpi_context, job.total_amount)?;
 
     job.escrow_balance = job.total_amount;
-    job.status = JobStatus::Funded;
+    job.status = JobStatus::InProgress;
 
     emit!(JobFunded {
         job_id: job.job_id,

@@ -3,12 +3,12 @@ use crate::state::{Job, Dispute, PlatformConfig, JobStatus, DisputeStatus, Dispu
 use crate::errors::FreelanceError;
 use crate::events::DisputeOpened;
 
-pub fn handler(ctx: Context<OpenDispute>, milestone_id: u8) -> Result<()> {
+pub fn open_dispute_handler(ctx: Context<OpenDispute>, milestone_id: u8) -> Result<()> {
     let job = &mut ctx.accounts.job;
     let dispute = &mut ctx.accounts.dispute;
 
     require!(
-        job.status == JobStatus::Funded || job.status == JobStatus::InProgress,
+        job.status == JobStatus::InProgress,
         FreelanceError::InvalidJobStatus
     );
 

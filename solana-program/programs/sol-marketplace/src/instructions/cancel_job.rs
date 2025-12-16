@@ -3,11 +3,11 @@ use crate::state::{Job, JobStatus, seeds};
 use crate::errors::FreelanceError;
 use crate::events::JobCancelled;
 
-pub fn handler(ctx: Context<CancelJob>) -> Result<()> {
+pub fn cancel_job_handler(ctx: Context<CancelJob>) -> Result<()> {
     let job = &mut ctx.accounts.job;
 
     require!(
-        job.status == JobStatus::Created || job.status == JobStatus::Funded || job.status == JobStatus::InProgress,
+        job.status == JobStatus::Created,
         FreelanceError::InvalidJobStatus
     );
 

@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-sol_marketplace = "8MdY8beW126YZDdXhJfm28TJ61hKTuzKTU8tR8t6Boe7"
+web3_freelancer_sc = "7Aeyy6HZa97qQxvChJB3xW9Tp3phD9ZDSEUqoMJSsbui"
 
 [registry]
 url = "https://api.apr.dev"

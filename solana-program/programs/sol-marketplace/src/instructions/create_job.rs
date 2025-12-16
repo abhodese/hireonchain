@@ -5,7 +5,7 @@ use crate::events::JobCreated;
 
 pub const MAX_MILESTONES: usize = 10;
 
-pub fn handler(
+pub fn create_job_handler(
     ctx: Context<CreateJob>,
     job_id: u64,
     milestone_amounts: Vec<u64>,
@@ -91,6 +91,11 @@ pub fn create_milestone_handler(
     amount: u64,
     description_hash: String,
 ) -> Result<()> {
+    require!(
+        milestone_id < ctx.accounts.job.milestone_count,
+        FreelanceError::InvalidMilestoneId
+    );
+
     let milestone = &mut ctx.accounts.milestone;
 
     milestone.job = ctx.accounts.job.key();
