@@ -3,14 +3,15 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 
-dotenv.config();
-
 const userRoutes = require("./routes/users");
 const jobRoutes = require("./routes/jobs");
 const contractRoutes = require("./routes/contracts");
-
+const {getCookie} = require("./utils/errorHandler.js");
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+dotenv.config();
+getCookie();
 
 // Core Middleware
 app.use(cors());
