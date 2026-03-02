@@ -3,6 +3,7 @@ dotenv.config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const parsejson = require('parsejson-pro');
 const swaggerUi = require('swagger-ui-express');
 const swaggerDoc = require('./docs/swagger.json');
 
