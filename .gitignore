@@ -36,6 +36,7 @@ Thumbs.db
 
 # Rust/Cargo
 /solana-program/target/
+/solana-program/.anchor/
 **/*.rs.bk
 
 # Misc
