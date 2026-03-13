@@ -9,7 +9,7 @@ pub mod instructions;
 use instructions::*;
 use state::DisputeRuling;
 
-declare_id!("7Aeyy6HZa97qQxvChJB3xW9Tp3phD9ZDSEUqoMJSsbui");
+declare_id!("BLs4UVLaq12mE1yGcuyud5LHWWQqyjJmCFQH2fmbXB9s");
 
 #[program]
 pub mod sol_marketplace {

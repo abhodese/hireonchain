@@ -1,56 +1,176 @@
+/**
+ * Freelance Marketplace SDK
+ *
+ * This SDK provides TypeScript/JavaScript bindings for the 
+ * Freelance Marketplace Solana program.
+ *
+ * Usage:
+ * ```typescript
+ * import { FreelanceClient, PROGRAM_ID } from "./SDK";
+ *
+ * const client = new FreelanceClient(connection, PROGRAM_ID);
+ * await client.createJob(payer, clientPubkey, freelancerPubkey, jobId, amounts, descriptions);
+ * ```
+ */
 
-//                Default Escrow Program ID
-//
-// Replace this with your deployed program ID once ready.
-// Until then, this placeholder prevents accidental errors.
-//
+// =============== Program ID ===============
+
 import { PublicKey } from "@solana/web3.js";
 
-export const ESCROW_PROGRAM_ID = new PublicKey(
-"11111111111111111111111111111111"
-);
+/**
+ * The deployed program ID for the Freelance Marketplace
+ */
+export const PROGRAM_ID = new PublicKey("BLs4UVLaq12mE1yGcuyud5LHWWQqyjJmCFQH2fmbXB9s");
+
+/**
+ * @deprecated Use PROGRAM_ID instead
+ */
+export const ESCROW_PROGRAM_ID = PROGRAM_ID;
 
 
+// =============== Core Client ===============
 
-//                       Core Client
+export { FreelanceClient } from "./client";
 
+/**
+ * @deprecated Use FreelanceClient instead
+ */
 export { EscrowClient } from "./client";
 
 
+// =============== Instructions ===============
 
-//                       Instructions
+export {
+  // Platform instructions
+  ixInitializePlatform,
+  ixSetPlatformFee,
+  ixWithdrawPlatformFees,
 
-export * from "./instructions";
+  // Job instructions
+  ixCreateJob,
+  ixCreateMilestone,
+  ixFundEscrow,
+  ixCancelJob,
+
+  // Milestone instructions
+  ixSubmitMilestone,
+  ixApproveMilestone,
+  ixReleaseMilestone,
+
+  // Dispute instructions
+  ixOpenDispute,
+  ixSubmitDisputeEvidence,
+  ixResolveDispute,
+} from "./instructions";
 
 
+// =============== PDA Derivation ===============
 
-//                       PDA Derivation
+export {
+  // New marketplace PDAs
+  derivePlatformConfigPda,
+  deriveJobPda,
+  deriveMilestonePda,
+  deriveDisputePda,
+  deriveUserStatsPda,
+  deriveVaultPda,
 
-export * from "./pdas";
+  // Legacy (deprecated)
+  deriveEscrowPda,
+  deriveEscrowTokenAta,
+  deriveInitializerTokenAta,
+  deriveFreelancerTokenAta,
+} from "./pdas";
 
 
+// =============== Types & Errors ===============
 
-//                       Types & Errors
+export {
+  // Enums
+  JobStatus,
+  MilestoneStatus,
+  DisputeStatus,
 
-export * from "./types";
+  // Dispute ruling
+  DisputeRuling,
+  DisputeRulingNone,
+  DisputeRulingClientWins,
+  DisputeRulingFreelancerWins,
+  createDisputeRulingSplit,
+
+  // Account types
+  PlatformConfigState,
+  JobState,
+  MilestoneState,
+  DisputeState,
+  UserStatsState,
+
+  // Instruction arguments
+  InitializePlatformArgs,
+  CreateJobArgs,
+  CreateMilestoneArgs,
+  SubmitMilestoneArgs,
+  OpenDisputeArgs,
+  SubmitDisputeEvidenceArgs,
+  ResolveDisputeArgs,
+  SetPlatformFeeArgs,
+  WithdrawPlatformFeesArgs,
+
+  // Errors
+  FreelanceErrorCode,
+  FreelanceClientError,
+
+  // Transaction results
+  FreelanceTxResult,
+  FreelanceClientConfig,
+
+  // Legacy types (deprecated)
+  EscrowInstruction,
+  EscrowAccountState,
+  EscrowErrorCode,
+  EscrowClientError,
+  EscrowTxResult,
+  EscrowClientConfig,
+} from "./types";
 
 
+// =============== Utilities ===============
 
-//                       Utility Helpers
+export {
+  // Account decoders
+  decodePlatformConfig,
+  decodeJob,
+  decodeMilestone,
+  decodeDispute,
 
-export * from "./utils";
+  // Fetch helpers
+  fetchPlatformConfig,
+  fetchJob,
+  fetchMilestone,
+  fetchDispute,
+
+  // Utility functions
+  lamportsToSol,
+  solToLamports,
+  calculateFee,
+  calculateFreelancerPayment,
+  formatJobStatus,
+  formatMilestoneStatus,
+  formatDisputeStatus,
+
+  // Legacy utilities (deprecated)
+  fetchEscrowByPda,
+  fetchEscrowByParties,
+  lamportsToSolDeprecated,
+  solToLamportsDeprecated,
+} from "./utils";
 
 
+// =============== Default Export ===============
 
-//                    Default Export (Optional)
-//
-// Some projects prefer a single default export.
-// You can remove this block if you don't want it.
-//
-import * as EscrowSdk from "."; // circular-safe due to TS hoisting
+import { FreelanceClient } from "./client";
 
 export default {
-EscrowClient: EscrowSdk.EscrowClient,
-ESCROW_PROGRAM_ID,
-...EscrowSdk,
+  FreelanceClient,
+  PROGRAM_ID,
 };

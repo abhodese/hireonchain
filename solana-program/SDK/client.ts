@@ -1,52 +1,65 @@
 import {
-    Connection,
-PublicKey,
-Transaction,
-TransactionInstruction,
-SendOptions,
-Commitment,
-Signer,
+  Connection,
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+  SendOptions,
+  Commitment,
+  Signer,
 } from "@solana/web3.js";
 
 import {
-ixInitializeSol,
-ixInitializeSolWithDeadline,
-ixInitializeToken,
-ixInitializeTokenWithDeadline,
-ixAccept,
-ixReleaseSol,
-ixReleaseToken,
-ixCancel,
+  ixInitializePlatform,
+  ixCreateJob,
+  ixCreateMilestone,
+  ixFundEscrow,
+  ixSubmitMilestone,
+  ixApproveMilestone,
+  ixReleaseMilestone,
+  ixCancelJob,
+  ixOpenDispute,
+  ixSubmitDisputeEvidence,
+  ixResolveDispute,
+  ixSetPlatformFee,
+  ixWithdrawPlatformFees,
+  PROGRAM_ID,
 } from "./instructions";
 
-import { deriveEscrowPda, deriveEscrowTokenAta } from "./pdas";
-import { EscrowClientConfig, EscrowTxResult } from "./types";
+import {
+  derivePlatformConfigPda,
+  deriveJobPda,
+  deriveMilestonePda,
+  deriveDisputePda,
+  deriveVaultPda,
+} from "./pdas";
 
+import {
+  FreelanceClientConfig,
+  FreelanceTxResult,
+  DisputeRuling,
+} from "./types";
 
 
 /**
+ * FreelanceClient
+ *
+ * High-level SDK wrapper for the Freelance Marketplace program.
+ * Handles:
+ *   - Instruction building
+ *   - Transaction sending
+ *   - Confirmation
+ *   - Returning slot + signature
+ */
+export class FreelanceClient {
+  readonly connection: Connection;
+  readonly programId: PublicKey;
+  readonly commitment: Commitment;
+  readonly preflight: SendOptions["preflightCommitment"];
 
-*                            EscrowClient
-
-*
-* This is your high-level SDK wrapper.
-* Handles:
-*   - instruction building
-*   - TX sending
-*   - confirmation
-*   - returning slot + signature
-*/
-
-export class EscrowClient {
-readonly connection: Connection;
-readonly programId: PublicKey;
-readonly commitment: Commitment;
-readonly preflight: SendOptions["preflightCommitment"];
-
-constructor(
+  constructor(
     connection: Connection,
-    programId: PublicKey,
-    config?: EscrowClientConfig
+    programId: PublicKey = PROGRAM_ID,
+    config?: FreelanceClientConfig
   ) {
     this.connection = connection;
     this.programId = programId;
@@ -55,18 +68,16 @@ constructor(
     this.preflight = config?.preflight ?? "simple";
   }
 
-
-  // SEND + CONFIRM HELPER
+  // =============== Send + Confirm Helper ===============
 
   private async send(
     payer: Signer,
     instructions: TransactionInstruction[]
-  ): Promise<EscrowTxResult> {
+  ): Promise<FreelanceTxResult> {
     const tx = new Transaction().add(...instructions);
     tx.feePayer = payer.publicKey;
 
     const latest = await this.connection.getLatestBlockhash(this.commitment);
-
     tx.recentBlockhash = latest.blockhash;
 
     const signed = await payer.signTransaction(tx);
@@ -93,165 +104,346 @@ constructor(
     };
   }
 
+  // =============== Platform Operations ===============
 
-
-
-  //                           HIGH-LEVEL METHODS
-
-
-
-  // 1. INITIALIZE SOL
-
-  async initializeSol(
+  /**
+   * Initialize the platform (admin only, one-time)
+   */
+  async initializePlatform(
     payer: Signer,
-    initializer: PublicKey,
-    freelancer: PublicKey,
-    amount: bigint
-  ) {
-    const ix = ixInitializeSol(
-      this.programId,
-      initializer,
-      freelancer,
-      amount
+    admin: PublicKey,
+    treasury: PublicKey,
+    arbitrator: PublicKey,
+    feeBps: number
+  ): Promise<FreelanceTxResult> {
+    const ix = ixInitializePlatform(
+      admin,
+      treasury,
+      arbitrator,
+      feeBps,
+      this.programId
     );
     return this.send(payer, [ix]);
   }
 
-
-  // 2. INITIALIZE SOL WITH DEADLINE
-
-  async initializeSolWithDeadline(
+  /**
+   * Set platform fee (admin only)
+   */
+  async setPlatformFee(
     payer: Signer,
-    initializer: PublicKey,
-    freelancer: PublicKey,
+    admin: PublicKey,
+    newFeeBps: number
+  ): Promise<FreelanceTxResult> {
+    const ix = ixSetPlatformFee(admin, newFeeBps, this.programId);
+    return this.send(payer, [ix]);
+  }
+
+  /**
+   * Withdraw platform fees (admin only)
+   */
+  async withdrawPlatformFees(
+    payer: Signer,
+    admin: PublicKey,
     amount: bigint,
-    deadlineUnixTimestamp: bigint
-  ) {
-    const ix = ixInitializeSolWithDeadline(
-      this.programId,
-      initializer,
-      freelancer,
+    recipient: PublicKey
+  ): Promise<FreelanceTxResult> {
+    const ix = ixWithdrawPlatformFees(
+      admin,
       amount,
-      deadlineUnixTimestamp
+      recipient,
+      this.programId
     );
     return this.send(payer, [ix]);
   }
 
+  // =============== Job Operations ===============
 
-  // 3. INITIALIZE SPL TOKEN
-
-  async initializeToken(
+  /**
+   * Create a new job with milestones
+   */
+  async createJob(
     payer: Signer,
-    initializer: PublicKey,
+    client: PublicKey,
     freelancer: PublicKey,
-    tokenMint: PublicKey,
-    initializerTokenAta: PublicKey,
-    amount: bigint
-  ) {
-    const ix = ixInitializeToken(
-      this.programId,
-      initializer,
+    jobId: bigint,
+    milestoneAmounts: bigint[],
+    milestoneDescriptions: string[],
+    tokenMint: PublicKey = PublicKey.default // Use SOL by default
+  ): Promise<FreelanceTxResult> {
+    const ix = ixCreateJob(
+      client,
       freelancer,
+      jobId,
+      milestoneAmounts,
+      milestoneDescriptions,
       tokenMint,
-      initializerTokenAta,
-      amount
+      this.programId
     );
     return this.send(payer, [ix]);
   }
 
-
-  // 4. INITIALIZE SPL TOKEN WITH DEADLINE
-
-  async initializeTokenWithDeadline(
+  /**
+   * Add a milestone to an existing job
+   */
+  async createMilestone(
     payer: Signer,
-    initializer: PublicKey,
-    freelancer: PublicKey,
-    tokenMint: PublicKey,
-    initializerTokenAta: PublicKey,
+    client: PublicKey,
+    jobClient: PublicKey,
+    jobId: bigint,
+    milestoneId: number,
     amount: bigint,
-    deadlineUnixTimestamp: bigint
-  ) {
-    const ix = ixInitializeTokenWithDeadline(
-      this.programId,
-      initializer,
-      freelancer,
-      tokenMint,
-      initializerTokenAta,
+    descriptionHash: string
+  ): Promise<FreelanceTxResult> {
+    const ix = ixCreateMilestone(
+      client,
+      jobClient,
+      jobId,
+      milestoneId,
       amount,
-      deadlineUnixTimestamp
+      descriptionHash,
+      this.programId
     );
     return this.send(payer, [ix]);
   }
 
+  /**
+   * Fund escrow for a job (client deposits funds)
+   */
+  async fundEscrow(
+    payer: Signer,
+    client: PublicKey,
+    jobClient: PublicKey,
+    jobId: bigint
+  ): Promise<FreelanceTxResult> {
+    const ix = ixFundEscrow(
+      client,
+      jobClient,
+      jobId,
+      this.programId
+    );
+    return this.send(payer, [ix]);
+  }
 
-  // 5. ACCEPT ESCROW (Freelancer signs)
+  /**
+   * Cancel a job and get refund
+   */
+  async cancelJob(
+    payer: Signer,
+    client: PublicKey,
+    jobClient: PublicKey,
+    jobId: bigint
+  ): Promise<FreelanceTxResult> {
+    const ix = ixCancelJob(
+      client,
+      jobClient,
+      jobId,
+      this.programId
+    );
+    return this.send(payer, [ix]);
+  }
 
-  async accept(
+  // =============== Milestone Operations ===============
+
+  /**
+   * Submit a milestone for review (freelancer)
+   */
+  async submitMilestone(
     payer: Signer,
     freelancer: PublicKey,
-    initializer: PublicKey
-  ) {
-    const ix = ixAccept(
-      this.programId,
+    jobClient: PublicKey,
+    jobId: bigint,
+    milestoneId: number,
+    submissionHash: string
+  ): Promise<FreelanceTxResult> {
+    const ix = ixSubmitMilestone(
       freelancer,
-      initializer
+      jobClient,
+      jobId,
+      milestoneId,
+      submissionHash,
+      this.programId
     );
     return this.send(payer, [ix]);
   }
 
-
-  // 6. RELEASE SOL (Initializer signs)
-
-  async releaseSol(
+  /**
+   * Approve a milestone (client)
+   */
+  async approveMilestone(
     payer: Signer,
-    initializer: PublicKey,
+    client: PublicKey,
+    jobClient: PublicKey,
+    jobId: bigint,
+    milestoneId: number
+  ): Promise<FreelanceTxResult> {
+    const ix = ixApproveMilestone(
+      client,
+      jobClient,
+      jobId,
+      milestoneId,
+      this.programId
+    );
+    return this.send(payer, [ix]);
+  }
+
+  /**
+   * Release payment for an approved milestone (client)
+   */
+  async releaseMilestone(
+    payer: Signer,
+    client: PublicKey,
+    jobClient: PublicKey,
+    jobId: bigint,
+    milestoneId: number,
+    freelancer: PublicKey,
+    treasury: PublicKey
+  ): Promise<FreelanceTxResult> {
+    const ix = ixReleaseMilestone(
+      client,
+      jobClient,
+      jobId,
+      milestoneId,
+      freelancer,
+      treasury,
+      this.programId
+    );
+    return this.send(payer, [ix]);
+  }
+
+  // =============== Dispute Operations ===============
+
+  /**
+   * Open a dispute for a job (client or freelancer)
+   */
+  async openDispute(
+    payer: Signer,
+    opener: PublicKey,
+    jobClient: PublicKey,
+    jobId: bigint,
+    milestoneId: number
+  ): Promise<FreelanceTxResult> {
+    const ix = ixOpenDispute(
+      opener,
+      jobClient,
+      jobId,
+      milestoneId,
+      this.programId
+    );
+    return this.send(payer, [ix]);
+  }
+
+  /**
+   * Submit evidence for an open dispute (client or freelancer)
+   */
+  async submitDisputeEvidence(
+    payer: Signer,
+    submitter: PublicKey,
+    jobClient: PublicKey,
+    jobId: bigint,
+    evidenceHash: string
+  ): Promise<FreelanceTxResult> {
+    const ix = ixSubmitDisputeEvidence(
+      submitter,
+      jobClient,
+      jobId,
+      evidenceHash,
+      this.programId
+    );
+    return this.send(payer, [ix]);
+  }
+
+  /**
+   * Resolve a dispute (arbitrator)
+   */
+  async resolveDispute(
+    payer: Signer,
+    arbitrator: PublicKey,
+    jobClient: PublicKey,
+    jobId: bigint,
+    milestoneId: number,
+    ruling: DisputeRuling,
+    client: PublicKey,
     freelancer: PublicKey
-  ) {
-    const ix = ixReleaseSol(
-      this.programId,
-      initializer,
-      freelancer
-    );
-    return this.send(payer, [ix]);
-  }
-
-
-  // 7. RELEASE TOKEN (Initializer signs)
-
-  async releaseToken(
-    payer: Signer,
-    initializer: PublicKey,
-    freelancer: PublicKey,
-    tokenMint: PublicKey,
-    freelancerTokenAta: PublicKey
-  ) {
-    const ix = ixReleaseToken(
-      this.programId,
-      initializer,
+  ): Promise<FreelanceTxResult> {
+    const ix = ixResolveDispute(
+      arbitrator,
+      jobClient,
+      jobId,
+      milestoneId,
+      ruling,
+      client,
       freelancer,
-      tokenMint,
-      freelancerTokenAta
+      this.programId
     );
     return this.send(payer, [ix]);
   }
 
+  // =============== PDA Derivation Helpers ===============
 
-  // 8. CANCEL (Initializer signs)
+  /**
+   * Get platform config PDA
+   */
+  getPlatformConfigPda(): PublicKey {
+    return derivePlatformConfigPda(this.programId).pda;
+  }
 
-  async cancel(
-    payer: Signer,
-    initializer: PublicKey,
-    freelancer: PublicKey,
-    maybeTokenMint?: PublicKey,
-    maybeInitializerTokenAta?: PublicKey
+  /**
+   * Get job PDA
+   */
+  getJobPda(client: PublicKey, jobId: bigint): PublicKey {
+    return deriveJobPda(this.programId, client, jobId).pda;
+  }
+
+  /**
+   * Get milestone PDA
+   */
+  getMilestonePda(job: PublicKey, milestoneId: number): PublicKey {
+    return deriveMilestonePda(this.programId, job, milestoneId).pda;
+  }
+
+  /**
+   * Get dispute PDA
+   */
+  getDisputePda(job: PublicKey): PublicKey {
+    return deriveDisputePda(this.programId, job).pda;
+  }
+
+  /**
+   * Get vault PDA for a job
+   */
+  getVaultPda(job: PublicKey): PublicKey {
+    return deriveVaultPda(this.programId, job).pda;
+  }
+}
+
+/**
+ * @deprecated Use FreelanceClient instead
+ */
+export class EscrowClient {
+  readonly connection: Connection;
+  readonly programId: PublicKey;
+  readonly commitment: Commitment;
+  readonly preflight: SendOptions["preflightCommitment"];
+
+  constructor(
+    connection: Connection,
+    programId: PublicKey,
+    config?: FreelanceClientConfig
   ) {
-    const ix = ixCancel(
-      this.programId,
-      initializer,
-      freelancer,
-      maybeTokenMint,
-      maybeInitializerTokenAta
-    );
-    return this.send(payer, [ix]);
+    console.warn("EscrowClient is deprecated. Use FreelanceClient instead.");
+    this.connection = connection;
+    this.programId = programId;
+    this.commitment = config?.commitment ?? "confirmed";
+    this.preflight = config?.preflight ?? "simple";
   }
+
+  // These methods throw errors - they're just placeholders
+  async initializeSol() { throw new Error("Deprecated: Use FreelanceClient"); }
+  async initializeSolWithDeadline() { throw new Error("Deprecated: Use FreelanceClient"); }
+  async initializeToken() { throw new Error("Deprecated: Use FreelanceClient"); }
+  async initializeTokenWithDeadline() { throw new Error("Deprecated: Use FreelanceClient"); }
+  async accept() { throw new Error("Deprecated: Use FreelanceClient"); }
+  async releaseSol() { throw new Error("Deprecated: Use FreelanceClient"); }
+  async releaseToken() { throw new Error("Deprecated: Use FreelanceClient"); }
+  async cancel() { throw new Error("Deprecated: Use FreelanceClient"); }
 }
