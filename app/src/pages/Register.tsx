@@ -90,18 +90,16 @@ const Register: React.FC = () => {
         return;
       }
 
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         setApiError(error.response.data.message || 'Registration failed. Please try again.');
       } else {
         setApiError('Registration failed. Please try again.');
       }
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
-
-    navigate('/dashboard', { replace: true });
   };
 
   return (
