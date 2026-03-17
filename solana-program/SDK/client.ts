@@ -5,7 +5,6 @@ import {
   TransactionInstruction,
   SendOptions,
   Commitment,
-  Signer,
 } from "@solana/web3.js";
 
 import {
@@ -37,6 +36,8 @@ import {
   FreelanceClientConfig,
   FreelanceTxResult,
   DisputeRuling,
+  WalletSigner,
+  OnTransactionStatus,
 } from "./types";
 
 
@@ -54,7 +55,9 @@ export class FreelanceClient {
   readonly connection: Connection;
   readonly programId: PublicKey;
   readonly commitment: Commitment;
-  readonly preflight: SendOptions["preflightCommitment"];
+  readonly preflight: Commitment;
+  readonly onStatus?: OnTransactionStatus;
+  readonly waitForFinalization: boolean;
 
   constructor(
     connection: Connection,
@@ -65,23 +68,29 @@ export class FreelanceClient {
     this.programId = programId;
 
     this.commitment = config?.commitment ?? "confirmed";
-    this.preflight = config?.preflight ?? "simple";
+    this.preflight = config?.preflight ?? "confirmed";
+    this.onStatus = config?.onStatus;
+    this.waitForFinalization = config?.waitForFinalization ?? false;
   }
 
   // =============== Send + Confirm Helper ===============
 
   private async send(
-    payer: Signer,
+    wallet: WalletSigner,
     instructions: TransactionInstruction[]
   ): Promise<FreelanceTxResult> {
+    this.onStatus?.({ stage: "signing" });
+
     const tx = new Transaction().add(...instructions);
-    tx.feePayer = payer.publicKey;
+    tx.feePayer = wallet.publicKey;
 
-    const latest = await this.connection.getLatestBlockhash(this.commitment);
-    tx.recentBlockhash = latest.blockhash;
+    const { blockhash, lastValidBlockHeight } =
+      await this.connection.getLatestBlockhash(this.commitment);
+    tx.recentBlockhash = blockhash;
 
-    const signed = await payer.signTransaction(tx);
-    const sig = await this.connection.sendRawTransaction(
+    const signed = await wallet.signTransaction(tx);
+
+    const txId = await this.connection.sendRawTransaction(
       signed.serialize(),
       {
         skipPreflight: false,
@@ -89,19 +98,50 @@ export class FreelanceClient {
       }
     );
 
+    this.onStatus?.({ stage: "submitted", txId });
+    this.onStatus?.({ stage: "confirming", txId });
+
     const confirmation = await this.connection.confirmTransaction(
       {
-        signature: sig,
-        blockhash: latest.blockhash,
-        lastValidBlockHeight: latest.lastValidBlockHeight,
+        signature: txId,
+        blockhash,
+        lastValidBlockHeight,
       },
       this.commitment
     );
 
-    return {
-      txId: sig,
-      slot: confirmation.context.slot,
-    };
+    if (confirmation.value.err) {
+      const errorMsg = `Transaction failed on-chain: ${JSON.stringify(confirmation.value.err)}`;
+      this.onStatus?.({ stage: "error", txId, error: errorMsg });
+      throw new Error(errorMsg);
+    }
+
+    const slot = confirmation.context.slot;
+    this.onStatus?.({ stage: "confirmed", txId, slot });
+
+    if (this.waitForFinalization) {
+      await this.awaitFinalization(txId);
+    }
+
+    return { txId, slot };
+  }
+
+  private async awaitFinalization(txId: string): Promise<void> {
+    const maxAttempts = 60;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      const { value } = await this.connection.getSignatureStatuses([txId]);
+      const status = value[0];
+
+      if (status?.confirmationStatus === "finalized") {
+        this.onStatus?.({ stage: "finalized", txId, slot: status.slot });
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    console.warn(`Transaction ${txId} confirmed but finalization timed out`);
   }
 
   // =============== Platform Operations ===============
@@ -110,7 +150,7 @@ export class FreelanceClient {
    * Initialize the platform (admin only, one-time)
    */
   async initializePlatform(
-    payer: Signer,
+    wallet: WalletSigner,
     admin: PublicKey,
     treasury: PublicKey,
     arbitrator: PublicKey,
@@ -123,37 +163,40 @@ export class FreelanceClient {
       feeBps,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   /**
    * Set platform fee (admin only)
    */
   async setPlatformFee(
-    payer: Signer,
+    wallet: WalletSigner,
     admin: PublicKey,
     newFeeBps: number
   ): Promise<FreelanceTxResult> {
     const ix = ixSetPlatformFee(admin, newFeeBps, this.programId);
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   /**
    * Withdraw platform fees (admin only)
+   * @param treasury 
    */
   async withdrawPlatformFees(
-    payer: Signer,
+    wallet: WalletSigner,
     admin: PublicKey,
     amount: bigint,
-    recipient: PublicKey
+    recipient: PublicKey,
+    treasury: PublicKey
   ): Promise<FreelanceTxResult> {
     const ix = ixWithdrawPlatformFees(
       admin,
       amount,
       recipient,
+      treasury,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   // =============== Job Operations ===============
@@ -162,7 +205,7 @@ export class FreelanceClient {
    * Create a new job with milestones
    */
   async createJob(
-    payer: Signer,
+    wallet: WalletSigner,
     client: PublicKey,
     freelancer: PublicKey,
     jobId: bigint,
@@ -179,14 +222,14 @@ export class FreelanceClient {
       tokenMint,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   /**
    * Add a milestone to an existing job
    */
   async createMilestone(
-    payer: Signer,
+    wallet: WalletSigner,
     client: PublicKey,
     jobClient: PublicKey,
     jobId: bigint,
@@ -203,14 +246,14 @@ export class FreelanceClient {
       descriptionHash,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   /**
    * Fund escrow for a job (client deposits funds)
    */
   async fundEscrow(
-    payer: Signer,
+    wallet: WalletSigner,
     client: PublicKey,
     jobClient: PublicKey,
     jobId: bigint
@@ -221,14 +264,14 @@ export class FreelanceClient {
       jobId,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   /**
    * Cancel a job and get refund
    */
   async cancelJob(
-    payer: Signer,
+    wallet: WalletSigner,
     client: PublicKey,
     jobClient: PublicKey,
     jobId: bigint
@@ -239,7 +282,7 @@ export class FreelanceClient {
       jobId,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   // =============== Milestone Operations ===============
@@ -248,7 +291,7 @@ export class FreelanceClient {
    * Submit a milestone for review (freelancer)
    */
   async submitMilestone(
-    payer: Signer,
+    wallet: WalletSigner,
     freelancer: PublicKey,
     jobClient: PublicKey,
     jobId: bigint,
@@ -263,14 +306,14 @@ export class FreelanceClient {
       submissionHash,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   /**
    * Approve a milestone (client)
    */
   async approveMilestone(
-    payer: Signer,
+    wallet: WalletSigner,
     client: PublicKey,
     jobClient: PublicKey,
     jobId: bigint,
@@ -283,14 +326,14 @@ export class FreelanceClient {
       milestoneId,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   /**
    * Release payment for an approved milestone (client)
    */
   async releaseMilestone(
-    payer: Signer,
+    wallet: WalletSigner,
     client: PublicKey,
     jobClient: PublicKey,
     jobId: bigint,
@@ -307,7 +350,7 @@ export class FreelanceClient {
       treasury,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   // =============== Dispute Operations ===============
@@ -316,7 +359,7 @@ export class FreelanceClient {
    * Open a dispute for a job (client or freelancer)
    */
   async openDispute(
-    payer: Signer,
+    wallet: WalletSigner,
     opener: PublicKey,
     jobClient: PublicKey,
     jobId: bigint,
@@ -329,14 +372,14 @@ export class FreelanceClient {
       milestoneId,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   /**
    * Submit evidence for an open dispute (client or freelancer)
    */
   async submitDisputeEvidence(
-    payer: Signer,
+    wallet: WalletSigner,
     submitter: PublicKey,
     jobClient: PublicKey,
     jobId: bigint,
@@ -349,14 +392,14 @@ export class FreelanceClient {
       evidenceHash,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   /**
    * Resolve a dispute (arbitrator)
    */
   async resolveDispute(
-    payer: Signer,
+    wallet: WalletSigner,
     arbitrator: PublicKey,
     jobClient: PublicKey,
     jobId: bigint,
@@ -375,7 +418,7 @@ export class FreelanceClient {
       freelancer,
       this.programId
     );
-    return this.send(payer, [ix]);
+    return this.send(wallet, [ix]);
   }
 
   // =============== PDA Derivation Helpers ===============
@@ -434,7 +477,7 @@ export class EscrowClient {
     this.connection = connection;
     this.programId = programId;
     this.commitment = config?.commitment ?? "confirmed";
-    this.preflight = config?.preflight ?? "simple";
+    this.preflight = config?.preflight ?? "confirmed";
   }
 
   // These methods throw errors - they're just placeholders

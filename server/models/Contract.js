@@ -17,18 +17,101 @@ const contractSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    onChainJobId: {
+      type: Number,
+      unique: true,
+      sparse: true,
+    },
+    jobPda: {
+      type: String,
+    },
+    vaultPda: {
+      type: String,
+    },
+    disputePda: {
+      type: String,
+    },
+    clientWallet: {
+      type: String,
+    },
+    freelancerWallet: {
+      type: String,
+    },
+    totalAmount: {
+      type: Number,
+      default: 0,
+    },
+    escrowBalance: {
+      type: Number,
+      default: 0,
+    },
     status: {
       type: String,
-      enum: ['pending', 'funded', 'in_progress', 'completed', 'disputed'],
+      enum: ['pending', 'created', 'funded', 'in_progress', 'completed', 'disputed', 'cancelled'],
       default: 'pending',
     },
-    amount: {
-      type: Number,
-      required: true,
-    },
+    milestones: [
+      {
+        milestoneId: {
+          type: Number,
+          required: true,
+        },
+        amount: {
+          type: Number,
+          required: true,
+        },
+        description: {
+          type: String,
+          required: true,
+        },
+        descriptionHash: {
+          type: String,
+        },
+        status: {
+          type: String,
+          enum: ['pending', 'submitted', 'approved', 'paid'],
+          default: 'pending',
+        },
+        submissionHash: {
+          type: String,
+        },
+        milestonePda: {
+          type: String,
+        },
+      },
+    ],
+    transactions: [
+      {
+        type: {
+          type: String,
+          enum: [
+            'create',
+            'fund',
+            'submit',
+            'approve',
+            'release',
+            'cancel',
+            'dispute',
+            'evidence',
+            'resolve',
+          ],
+          required: true,
+        },
+        signature: {
+          type: String,
+          required: true,
+        },
+        milestoneId: {
+          type: Number,
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     contractAddress: {
       type: String,
-      required: true,
     },
     transactionSignature: {
       type: String,
@@ -38,7 +121,6 @@ const contractSchema = new mongoose.Schema(
     },
     escrowAccount: {
       type: String,
-      required: true,
     },
     releaseTransaction: {
       type: String,

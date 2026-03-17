@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 
 /**
  * -----------------------------------------------------
@@ -54,6 +54,22 @@ export const DisputeRulingFreelancerWins: DisputeRuling = { __kind: "FreelancerW
 export function createDisputeRulingSplit(clientBps: number, freelancerBps: number): DisputeRuling {
   return { __kind: "Split", clientBps, freelancerBps };
 }
+
+
+export interface WalletSigner {
+  publicKey: PublicKey;
+  signTransaction(transaction: Transaction): Promise<Transaction>;
+}
+
+export type TransactionStatus =
+  | { stage: "signing" }
+  | { stage: "submitted"; txId: string }
+  | { stage: "confirming"; txId: string }
+  | { stage: "confirmed"; txId: string; slot: number }
+  | { stage: "finalized"; txId: string; slot: number }
+  | { stage: "error"; txId?: string; error: string };
+
+export type OnTransactionStatus = (status: TransactionStatus) => void;
 
 /**
  * -----------------------------------------------------
@@ -306,7 +322,9 @@ export interface FreelanceTxResult {
 export interface FreelanceClientConfig {
   programId?: PublicKey;
   commitment?: "processed" | "confirmed" | "finalized";
-  preflight?: "none" | "simple" | "full";
+  preflight?: "processed" | "confirmed" | "finalized";
+  onStatus?: OnTransactionStatus;
+  waitForFinalization?: boolean;
 }
 
 /**
@@ -359,5 +377,5 @@ export interface EscrowTxResult {
 export interface EscrowClientConfig {
   programId?: PublicKey;
   commitment?: "processed" | "confirmed" | "finalized";
-  preflight?: "none" | "simple" | "full";
+  preflight?: "processed" | "confirmed" | "finalized";
 }

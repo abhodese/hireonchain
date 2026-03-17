@@ -1,34 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import api from '../utils/api';
 import { WalletButton } from '../components/WalletButton';
 import { useAppKitAccount } from '@reown/appkit/react';
+
+const createJobSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().min(1, 'Description is required'),
+  price: z
+    .string()
+    .min(1, 'Price is required')
+    .refine(val => parseFloat(val) > 0, 'Price must be greater than 0'),
+  skills: z.string().min(1, 'At least one skill is required'),
+  deadline: z.string().optional(),
+});
+
+type CreateJobFormData = z.infer<typeof createJobSchema>;
 
 const CreateJob: React.FC = () => {
   const navigate = useNavigate();
   const { address, isConnected } = useAppKitAccount();
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price: '',
-    skills: '',
-    deadline: '',
-  });
-
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [userRole, setUserRole] = useState('');
 
-  // Check user role
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateJobFormData>({
+    resolver: zodResolver(createJobSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      price: '',
+      skills: '',
+      deadline: '',
+    },
+  });
+
   useEffect(() => {
     const userInfoStr = localStorage.getItem('userInfo');
     if (userInfoStr) {
       const userInfo = JSON.parse(userInfoStr);
       setUserRole(userInfo.role);
 
-      // Redirect if not a client
       if (userInfo.role !== 'client') {
         alert('Only clients can post jobs');
         navigate('/dashboard');
@@ -36,48 +56,9 @@ const CreateJob: React.FC = () => {
     }
   }, [navigate]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-
-    if (!formData.price) {
-      newErrors.price = 'Price is required';
-    } else if (parseFloat(formData.price) <= 0) {
-      newErrors.price = 'Price must be greater than 0';
-    }
-
-    if (!formData.skills.trim()) {
-      newErrors.skills = 'At least one skill is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = async (data: CreateJobFormData) => {
     if (!isConnected || !address) {
       setSubmitError('Please connect your wallet first');
-      return;
-    }
-
-    if (!validateForm()) {
       return;
     }
 
@@ -85,13 +66,12 @@ const CreateJob: React.FC = () => {
     setSubmitError('');
 
     try {
-      // Format data for API
       const jobData = {
-        title: formData.title,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        skills: formData.skills.split(',').map(skill => skill.trim()),
-        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
+        title: data.title,
+        description: data.description,
+        price: parseFloat(data.price),
+        skills: data.skills.split(',').map(skill => skill.trim()),
+        deadline: data.deadline ? new Date(data.deadline).toISOString() : null,
       };
 
       const response = await api.post('/api/jobs', jobData);
@@ -110,7 +90,7 @@ const CreateJob: React.FC = () => {
   };
 
   if (userRole !== 'client') {
-    return null; // Prevent rendering until redirect happens
+    return null;
   }
 
   return (
@@ -126,31 +106,27 @@ const CreateJob: React.FC = () => {
         <div className="job-form-container">
           {submitError && <div className="error-message">{submitError}</div>}
 
-          <form onSubmit={handleSubmit} className="job-form">
+          <form onSubmit={handleSubmit(onSubmit)} className="job-form">
             <div className="form-group">
               <label htmlFor="title">Job Title</label>
               <input
                 type="text"
                 id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
                 placeholder="E.g. Develop a DeFi App on Solana"
+                {...register('title')}
               />
-              {errors.title && <div className="error">{errors.title}</div>}
+              {errors.title && <div className="error">{errors.title.message}</div>}
             </div>
 
             <div className="form-group">
               <label htmlFor="description">Job Description</label>
               <textarea
                 id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
                 placeholder="Provide a detailed description of the job requirements..."
                 rows={6}
+                {...register('description')}
               />
-              {errors.description && <div className="error">{errors.description}</div>}
+              {errors.description && <div className="error">{errors.description.message}</div>}
             </div>
 
             <div className="form-group">
@@ -158,14 +134,12 @@ const CreateJob: React.FC = () => {
               <input
                 type="number"
                 id="price"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
                 placeholder="Enter amount in SOL"
                 step="0.01"
                 min="0"
+                {...register('price')}
               />
-              {errors.price && <div className="error">{errors.price}</div>}
+              {errors.price && <div className="error">{errors.price.message}</div>}
             </div>
 
             <div className="form-group">
@@ -173,12 +147,10 @@ const CreateJob: React.FC = () => {
               <input
                 type="text"
                 id="skills"
-                name="skills"
-                value={formData.skills}
-                onChange={handleChange}
                 placeholder="E.g. React, Solana, Rust"
+                {...register('skills')}
               />
-              {errors.skills && <div className="error">{errors.skills}</div>}
+              {errors.skills && <div className="error">{errors.skills.message}</div>}
             </div>
 
             <div className="form-group">
@@ -186,12 +158,10 @@ const CreateJob: React.FC = () => {
               <input
                 type="date"
                 id="deadline"
-                name="deadline"
-                value={formData.deadline}
-                onChange={handleChange}
                 min={new Date().toISOString().split('T')[0]}
+                {...register('deadline')}
               />
-              {errors.deadline && <div className="error">{errors.deadline}</div>}
+              {errors.deadline && <div className="error">{errors.deadline.message}</div>}
             </div>
 
             <div className="wallet-info">

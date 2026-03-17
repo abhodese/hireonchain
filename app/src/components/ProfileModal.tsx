@@ -1,7 +1,10 @@
 import toast from 'react-hot-toast';
 import { UserProfile } from '../pages/Profile';
 import api from '../utils/api';
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
 interface ProfileProps {
   formData: UserProfile;
@@ -9,41 +12,68 @@ interface ProfileProps {
   setEditMode: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+const profileSchema = z.object({
+  username: z.string().min(1, 'Username is required'),
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email'),
+  bio: z
+    .string()
+    .min(1, 'Bio is required')
+    .max(300, 'Bio must be under 300 characters'),
+  skills: z.string().optional(),
+});
+
+type ProfileFormData = z.infer<typeof profileSchema>;
+
 export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProps) => {
-  const [wordCount, setWordCount] = useState(formData.bio?.length ?? 0);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset,
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      username: formData.username,
+      email: formData.email,
+      bio: formData.bio ?? '',
+      skills: Array.isArray(formData.skills) ? formData.skills.join(', ') : '',
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (wordCount >= 300) {
-      toast.error('Bios must be under 300 characters');
-      return;
-    }
+  const bioValue = watch('bio');
+  const bioLength = bioValue?.length ?? 0;
 
-    if (formData.bio.length === 0) {
-      toast.error('Bios are required');
-      return;
-    }
+  useEffect(() => {
+    reset({
+      username: formData.username,
+      email: formData.email,
+      bio: formData.bio ?? '',
+      skills: Array.isArray(formData.skills) ? formData.skills.join(', ') : '',
+    });
+  }, [formData, reset]);
 
+  const onSubmit = async (data: ProfileFormData) => {
     try {
       const updateData = {
         ...formData,
-        username: formData.username,
-        email: formData.email,
-        bio: formData.bio ?? '',
-        skills: formData.skills ? formData.skills.map(skill => skill.trim()) : [],
+        username: data.username,
+        email: data.email,
+        bio: data.bio,
+        skills: data.skills ? data.skills.split(',').map(skill => skill.trim()) : [],
       };
 
-      const { data } = await api.put('/api/users/profile', updateData);
-      setFormData(data);
+      const { data: responseData } = await api.put('/api/users/profile', updateData);
+      setFormData(responseData);
       setEditMode(false);
 
       localStorage.setItem(
         'userInfo',
-        data.username
+        responseData.username
           ? JSON.stringify({
               ...updateData,
-              username: data.username,
-              email: data.email,
+              username: responseData.username,
+              email: responseData.email,
             })
           : '{}'
       );
@@ -55,28 +85,13 @@ export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProp
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-
-    if (name === 'bio') {
-      setWordCount(value.length);
-      if (value.length >= 300) {
-        toast.error('Bios must be under 300 characters');
-      }
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 min-h-screen w-screen">
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg p-6 max-w-md w-full">
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg p-6 max-w-md w-full">
         <div className="items-center mx-auto justify-between flex mb-12">
           <h2 className="text-3xl font-bold text-center text-primary-600">Edit Profile</h2>
           <button
+            type="button"
             onClick={() => setEditMode(false)}
             className="text-secondary-600 hover:text-primary-600 text-2xl"
           >
@@ -92,12 +107,14 @@ export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProp
             <input
               type="text"
               id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${'border-secondary-300'}`}
+              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
+                errors.username ? 'border-red-300' : 'border-secondary-300'
+              }`}
+              {...register('username')}
             />
+            {errors.username && (
+              <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+            )}
           </div>
 
           <div>
@@ -107,12 +124,14 @@ export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProp
             <input
               type="email"
               id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${'border-secondary-300'}`}
+              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
+                errors.email ? 'border-red-300' : 'border-secondary-300'
+              }`}
+              {...register('email')}
             />
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            )}
           </div>
 
           <div>
@@ -121,20 +140,25 @@ export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProp
             </label>
             <textarea
               id="bio"
-              name="bio"
-              value={formData.bio}
-              onChange={handleChange}
               rows={4}
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${'border-secondary-300'}`}
+              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
+                errors.bio ? 'border-red-300' : 'border-secondary-300'
+              }`}
+              {...register('bio')}
             />
+            {errors.bio && (
+              <p className="mt-1 text-sm text-red-600">{errors.bio.message}</p>
+            )}
           </div>
 
           <div>
             <label
-              className={`block text-sm font-medium mb-1 ${wordCount >= 300 ? 'text-red-500' : 'text-secondary-900'}`}
+              className={`block text-sm font-medium mb-1 ${
+                bioLength >= 300 ? 'text-red-500' : 'text-secondary-900'
+              }`}
             >
               <span className="text-primary-600 underline">Characters:</span>
-              {` ${wordCount} / 300`}
+              {` ${bioLength} / 300`}
             </label>
           </div>
 
@@ -149,11 +173,9 @@ export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProp
               <input
                 type="text"
                 id="skills"
-                name="skills"
-                value={formData.skills || ''}
-                onChange={handleChange}
                 placeholder="React, TypeScript, Node.js"
                 className="w-full bg-secondary-900/50 border border-secondary-600 rounded-lg px-4 py-2.5 text-primary-400 font-semibold focus:outline-none focus:border-primary-500 transition-colors"
+                {...register('skills')}
               />
             </div>
           )}

@@ -7,7 +7,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-sol_marketplace = "BLs4UVLaq12mE1yGcuyud5LHWWQqyjJmCFQH2fmbXB9s"
+sol_marketplace = "Hzmfuj1scfA4UWNsKu82MopCsrvUEBGfeAtB79xYfXzK"
 
 [registry]
 url = "https://api.apr.dev"
@@ -16,8 +16,10 @@ url = "https://api.apr.dev"
 cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
-[test]
-startup_wait = 20000
-
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
+
+[test]
+startup_wait = 20000
+shutdown_wait = 2000
+upgradeable = false

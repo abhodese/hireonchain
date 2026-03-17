@@ -10,6 +10,7 @@ import {
   JobStatus,
   MilestoneStatus,
   DisputeStatus,
+  DisputeRuling,
 } from "./types";
 
 import {
@@ -21,20 +22,51 @@ import {
   deriveVaultPda,
 } from "./pdas";
 
+
+const JOB_STATUS_MAP: JobStatus[] = [
+  JobStatus.Created,     // 0
+  JobStatus.Funded,      // 1
+  JobStatus.InProgress,  // 2
+  JobStatus.Completed,   // 3
+  JobStatus.Disputed,    // 4
+  JobStatus.Cancelled,   // 5
+];
+
+const MILESTONE_STATUS_MAP: MilestoneStatus[] = [
+  MilestoneStatus.Pending,    // 0
+  MilestoneStatus.Submitted,  // 1
+  MilestoneStatus.Approved,   // 2
+  MilestoneStatus.Paid,       // 3
+];
+
+const DISPUTE_STATUS_MAP: DisputeStatus[] = [
+  DisputeStatus.Open,      // 0
+  DisputeStatus.Resolved,  // 1
+];
+
 // =============== Account Decoders ===============
+
+function decodeDisputeRuling(data: Buffer, offset: number): { ruling: DisputeRuling; bytesRead: number } {
+  const variant = data.readUInt8(offset);
+  switch (variant) {
+    case 0: return { ruling: { __kind: "None" }, bytesRead: 1 };
+    case 1: return { ruling: { __kind: "ClientWins" }, bytesRead: 1 };
+    case 2: return { ruling: { __kind: "FreelancerWins" }, bytesRead: 1 };
+    case 3: {
+      const clientBps = data.readUInt16LE(offset + 1);
+      const freelancerBps = data.readUInt16LE(offset + 3);
+      return { ruling: { __kind: "Split", clientBps, freelancerBps }, bytesRead: 5 };
+    }
+    default: return { ruling: { __kind: "None" }, bytesRead: 1 };
+  }
+}
 
 /**
  * Decode PlatformConfig account data
  */
 export function decodePlatformConfig(data: Buffer): PlatformConfigState {
-  // PlatformConfig layout from Rust:
-  // pub admin: Pubkey,        // 32 bytes
-  // pub treasury: Pubkey,      // 32 bytes
-  // pub arbitrator: Pubkey,   // 32 bytes
-  // pub fee_bps: u16,         // 2 bytes
-  // pub total_fees_collected: u64, // 8 bytes
-  // pub bump: u8              // 1 byte
-  
+  const buf = data.slice(8);
+
   const layout = borsh.struct([
     borsh.publicKey("admin"),
     borsh.publicKey("treasury"),
@@ -44,8 +76,8 @@ export function decodePlatformConfig(data: Buffer): PlatformConfigState {
     borsh.u8("bump"),
   ]);
 
-  const decoded = layout.decode(data);
-  
+  const decoded = layout.decode(buf);
+
   return {
     admin: decoded.admin,
     treasury: decoded.treasury,
@@ -60,6 +92,8 @@ export function decodePlatformConfig(data: Buffer): PlatformConfigState {
  * Decode Job account data
  */
 export function decodeJob(data: Buffer): JobState {
+  const buf = data.slice(8);
+
   const layout = borsh.struct([
     borsh.u64("jobId"),
     borsh.publicKey("client"),
@@ -69,15 +103,15 @@ export function decodeJob(data: Buffer): JobState {
     borsh.u8("milestoneCount"),
     borsh.u8("milestonesPaid"),
     borsh.u8("milestonesApproved"),
-    borsh.str("status"), // Store as string, convert to enum
+    borsh.u8("status"),
     borsh.publicKey("tokenMint"),
     borsh.i64("createdAt"),
     borsh.u8("bump"),
     borsh.u8("vaultBump"),
   ]);
 
-  const decoded = layout.decode(data);
-  
+  const decoded = layout.decode(buf);
+
   return {
     jobId: decoded.jobId,
     client: decoded.client,
@@ -87,7 +121,7 @@ export function decodeJob(data: Buffer): JobState {
     milestoneCount: decoded.milestoneCount,
     milestonesPaid: decoded.milestonesPaid,
     milestonesApproved: decoded.milestonesApproved,
-    status: decoded.status as JobStatus,
+    status: JOB_STATUS_MAP[decoded.status] ?? JobStatus.Created,
     tokenMint: decoded.tokenMint,
     createdAt: decoded.createdAt,
     bump: decoded.bump,
@@ -99,11 +133,13 @@ export function decodeJob(data: Buffer): JobState {
  * Decode Milestone account data
  */
 export function decodeMilestone(data: Buffer): MilestoneState {
+  const buf = data.slice(8);
+
   const layout = borsh.struct([
     borsh.publicKey("job"),
     borsh.u8("milestoneId"),
     borsh.u64("amount"),
-    borsh.str("status"),
+    borsh.u8("status"),
     borsh.str("descriptionHash"),
     borsh.str("submissionHash"),
     borsh.i64("submittedAt"),
@@ -112,13 +148,13 @@ export function decodeMilestone(data: Buffer): MilestoneState {
     borsh.u8("bump"),
   ]);
 
-  const decoded = layout.decode(data);
-  
+  const decoded = layout.decode(buf);
+
   return {
     job: decoded.job,
     milestoneId: decoded.milestoneId,
     amount: decoded.amount,
-    status: decoded.status as MilestoneStatus,
+    status: MILESTONE_STATUS_MAP[decoded.status] ?? MilestoneStatus.Pending,
     descriptionHash: decoded.descriptionHash,
     submissionHash: decoded.submissionHash,
     submittedAt: decoded.submittedAt,
@@ -132,34 +168,55 @@ export function decodeMilestone(data: Buffer): MilestoneState {
  * Decode Dispute account data
  */
 export function decodeDispute(data: Buffer): DisputeState {
-  // Dispute is more complex due to the enum
-  // For simplicity, we'll decode it as raw data first
-  const layout = borsh.struct([
-    borsh.publicKey("job"),
-    borsh.publicKey("opener"),
-    borsh.u8("milestoneId"),
-    borsh.str("status"),
-    borsh.str("ruling"),
-    borsh.str("clientEvidence"),
-    borsh.str("freelancerEvidence"),
-    borsh.i64("openedAt"),
-    borsh.i64("resolvedAt"),
-    borsh.u8("bump"),
-  ]);
+  const buf = data.slice(8);
 
-  const decoded = layout.decode(data);
-  
+  let offset = 0;
+
+  const job = new PublicKey(buf.slice(offset, offset + 32));
+  offset += 32;
+
+  const opener = new PublicKey(buf.slice(offset, offset + 32));
+  offset += 32;
+
+  const milestoneId = buf.readUInt8(offset);
+  offset += 1;
+
+  const statusByte = buf.readUInt8(offset);
+  const status = DISPUTE_STATUS_MAP[statusByte] ?? DisputeStatus.Open;
+  offset += 1;
+
+  const { ruling, bytesRead } = decodeDisputeRuling(buf, offset);
+  offset += bytesRead;
+
+  const clientEvidenceLen = buf.readUInt32LE(offset);
+  offset += 4;
+  const clientEvidence = buf.slice(offset, offset + clientEvidenceLen).toString("utf8");
+  offset += clientEvidenceLen;
+
+  const freelancerEvidenceLen = buf.readUInt32LE(offset);
+  offset += 4;
+  const freelancerEvidence = buf.slice(offset, offset + freelancerEvidenceLen).toString("utf8");
+  offset += freelancerEvidenceLen;
+
+  const openedAt = buf.readBigInt64LE(offset);
+  offset += 8;
+
+  const resolvedAt = buf.readBigInt64LE(offset);
+  offset += 8;
+
+  const bump = buf.readUInt8(offset);
+
   return {
-    job: decoded.job,
-    opener: decoded.opener,
-    milestoneId: decoded.milestoneId,
-    status: decoded.status as DisputeStatus,
-    ruling: { __kind: decoded.ruling as any },
-    clientEvidence: decoded.clientEvidence,
-    freelancerEvidence: decoded.freelancerEvidence,
-    openedAt: decoded.openedAt,
-    resolvedAt: decoded.resolvedAt,
-    bump: decoded.bump,
+    job,
+    opener,
+    milestoneId,
+    status,
+    ruling,
+    clientEvidence,
+    freelancerEvidence,
+    openedAt,
+    resolvedAt,
+    bump,
   };
 }
 

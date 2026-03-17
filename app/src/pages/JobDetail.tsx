@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import api from '../utils/api';
 import { createContract } from '../utils/contractUtils';
 import { WalletButton } from '../components/WalletButton';
@@ -43,6 +46,16 @@ interface Job {
   contractAddress?: string;
 }
 
+const proposalSchema = z.object({
+  proposalText: z.string().min(1, 'Please enter a proposal description'),
+  proposalPrice: z
+    .string()
+    .min(1, 'Price is required')
+    .refine(val => parseFloat(val) > 0, 'Price must be greater than 0'),
+});
+
+type ProposalFormData = z.infer<typeof proposalSchema>;
+
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -55,11 +68,21 @@ const JobDetail: React.FC = () => {
   const [userRole, setUserRole] = useState('');
   const [userId, setUserId] = useState('');
 
-  const [proposalText, setProposalText] = useState('');
-  const [proposalPrice, setProposalPrice] = useState('');
   const [submittingProposal, setSubmittingProposal] = useState(false);
-  const [proposalError, setProposalError] = useState('');
   const [proposalSuccess, setProposalSuccess] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError: setFormError,
+  } = useForm<ProposalFormData>({
+    resolver: zodResolver(proposalSchema),
+    defaultValues: {
+      proposalText: '',
+      proposalPrice: '',
+    },
+  });
 
   // Contract creation state
   const [creatingContract, setCreatingContract] = useState(false);
@@ -72,15 +95,11 @@ const JobDetail: React.FC = () => {
         const response = await api.get(`/api/jobs/${id}`);
         setJob(response.data);
 
-        // Get user info
         const userInfoStr = localStorage.getItem('userInfo');
         if (userInfoStr) {
           const userInfo = JSON.parse(userInfoStr);
           setUserRole(userInfo.role);
           setUserId(userInfo._id);
-
-          // Set default proposal price to job price
-          setProposalPrice(response.data.price.toString());
         }
       } catch (error) {
         console.error('Error fetching job:', error);
@@ -95,38 +114,38 @@ const JobDetail: React.FC = () => {
     }
   }, [id]);
 
-  const handleProposalSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onProposalSubmit = async (data: ProposalFormData) => {
     if (!isConnected || !address) {
-      setProposalError('Please connect your wallet first');
-      return;
-    }
-
-    if (!proposalText) {
-      setProposalError('Please enter a proposal description');
+      setFormError('root', {
+        type: 'manual',
+        message: 'Please connect your wallet first',
+      });
       return;
     }
 
     setSubmittingProposal(true);
-    setProposalError('');
 
     try {
       await api.post(`/api/jobs/${id}/proposals`, {
-        proposal: proposalText,
-        price: parseFloat(proposalPrice),
+        proposal: data.proposalText,
+        price: parseFloat(data.proposalPrice),
       });
 
       setProposalSuccess(true);
-      // Refresh job data to show the new proposal
       const updatedJob = await api.get(`/api/jobs/${id}`);
       setJob(updatedJob.data);
     } catch (error: any) {
       console.error('Error submitting proposal:', error);
       if (error.response && error.response.data) {
-        setProposalError(error.response.data.message || 'Failed to submit proposal');
+        setFormError('root', {
+          type: 'manual',
+          message: error.response.data.message || 'Failed to submit proposal',
+        });
       } else {
-        setProposalError('Failed to submit proposal');
+        setFormError('root', {
+          type: 'manual',
+          message: 'Failed to submit proposal',
+        });
       }
     } finally {
       setSubmittingProposal(false);
@@ -137,7 +156,6 @@ const JobDetail: React.FC = () => {
     try {
       await api.put(`/api/jobs/${id}/proposals/${proposalId}/accept`);
 
-      // Refresh job data
       const updatedJob = await api.get(`/api/jobs/${id}`);
       setJob(updatedJob.data);
     } catch (error) {
@@ -170,7 +188,6 @@ const JobDetail: React.FC = () => {
       const result = await createContract(job._id, contractAddress, job.price, adapter);
 
       if (result.success) {
-        // Refresh job data
         const updatedJob = await api.get(`/api/jobs/${id}`);
         setJob(updatedJob.data);
         alert('Contract created successfully');
@@ -305,17 +322,18 @@ const JobDetail: React.FC = () => {
                   Your proposal has been submitted successfully!
                 </div>
               ) : (
-                <form onSubmit={handleProposalSubmit} className="proposal-form">
+                <form onSubmit={handleSubmit(onProposalSubmit)} className="proposal-form">
                   <div className="form-group">
                     <label htmlFor="proposalText">Your Proposal</label>
                     <textarea
                       id="proposalText"
-                      value={proposalText}
-                      onChange={e => setProposalText(e.target.value)}
                       placeholder="Describe how you can help with this project..."
                       rows={6}
-                      required
+                      {...register('proposalText')}
                     />
+                    {errors.proposalText && (
+                      <div className="error">{errors.proposalText.message}</div>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -323,15 +341,16 @@ const JobDetail: React.FC = () => {
                     <input
                       type="number"
                       id="proposalPrice"
-                      value={proposalPrice}
-                      onChange={e => setProposalPrice(e.target.value)}
                       step="0.01"
                       min="0"
-                      required
+                      {...register('proposalPrice')}
                     />
+                    {errors.proposalPrice && (
+                      <div className="error">{errors.proposalPrice.message}</div>
+                    )}
                   </div>
 
-                  {proposalError && <div className="error-message">{proposalError}</div>}
+                  {errors.root && <div className="error-message">{errors.root.message}</div>}
 
                   <button
                     type="submit"

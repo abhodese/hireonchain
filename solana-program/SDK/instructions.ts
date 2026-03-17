@@ -22,8 +22,24 @@ import {
   deriveVaultPda,
 } from "./pdas";
 
-// Program ID - should match the deployed program
-export const PROGRAM_ID = new PublicKey("BLs4UVLaq12mE1yGcuyud5LHWWQqyjJmCFQH2fmbXB9s");
+// Program ID - matches the deployed program on devnet
+export const PROGRAM_ID = new PublicKey("Hzmfuj1scfA4UWNsKu82MopCsrvUEBGfeAtB79xYfXzK");
+
+const DISCRIMINATORS = {
+  initialize_platform: Buffer.from([119, 201, 101, 45, 75, 122, 89, 3]),
+  create_job: Buffer.from([178, 130, 217, 110, 100, 27, 82, 119]),
+  create_milestone: Buffer.from([239, 58, 201, 28, 40, 186, 173, 48]),
+  fund_escrow: Buffer.from([155, 18, 218, 141, 182, 213, 69, 201]),
+  submit_milestone: Buffer.from([35, 96, 220, 215, 102, 83, 139, 52]),
+  approve_milestone: Buffer.from([145, 85, 92, 60, 50, 130, 219, 106]),
+  release_milestone: Buffer.from([56, 2, 199, 164, 184, 108, 167, 222]),
+  cancel_job: Buffer.from([126, 241, 155, 241, 50, 236, 83, 118]),
+  open_dispute: Buffer.from([137, 25, 99, 119, 23, 223, 161, 42]),
+  submit_dispute_evidence: Buffer.from([177, 174, 100, 125, 106, 213, 241, 22]),
+  resolve_dispute: Buffer.from([231, 6, 202, 6, 96, 103, 12, 230]),
+  set_platform_fee: Buffer.from([19, 70, 111, 182, 156, 58, 208, 203]),
+  withdraw_platform_fees: Buffer.from([87, 24, 138, 122, 62, 146, 186, 199]),
+} as const;
 
 // =============== Borsh Schemas for Instruction Data ===============
 
@@ -61,11 +77,6 @@ const SubmitDisputeEvidenceSchema = borsh.struct([
   borsh.str("evidenceHash"),
 ]);
 
-// ResolveDispute: ruling (enum)
-const ResolveDisputeSchema = borsh.struct([
-  borsh.str("ruling"), // "None", "ClientWins", "FreelancerWins", "Split:clientBps,freelancerBps"
-]);
-
 // SetPlatformFee: new_fee_bps (u16)
 const SetPlatformFeeSchema = borsh.struct([
   borsh.u16("newFeeBps"),
@@ -78,19 +89,36 @@ const WithdrawPlatformFeesSchema = borsh.struct([
 
 // =============== Helper Functions ===============
 
-function encode<T>(schema: borsh.StructType<T>, data: T): Buffer {
-  const buffer = Buffer.alloc(1000);
-  const len = schema.encode(data, buffer);
-  return buffer.slice(0, len);
+
+function encodeWithDiscriminator<T>(
+  discriminator: Buffer,
+  schema: any,
+  data: T
+): Buffer {
+  const argsBuf = Buffer.alloc(1000);
+  const len = schema.encode(data, argsBuf);
+  return Buffer.concat([discriminator, argsBuf.slice(0, len)]);
 }
 
-function encodeDiscriminator(discriminator: string): Buffer {
-  // For Anchor, we prepend the discriminator as a prefix
-  // The discriminator is the first 8 bytes of SHA256("global:<instruction_name>")
-  // But for simplicity, we'll use a different approach: prepend instruction index
-  // In Anchor 0.30+, the discriminator is calculated automatically
-  // For manual encoding, we'll use a simple prefix approach
-  return Buffer.from([0]); // Placeholder - Anchor handles this automatically
+
+function encodeDisputeRuling(ruling: DisputeRuling): Buffer {
+  if (ruling.__kind === "None") {
+    return Buffer.from([0]);
+  }
+  if (ruling.__kind === "ClientWins") {
+    return Buffer.from([1]);
+  }
+  if (ruling.__kind === "FreelancerWins") {
+    return Buffer.from([2]);
+  }
+  if (ruling.__kind === "Split") {
+    const buf = Buffer.alloc(5);
+    buf.writeUInt8(3, 0);
+    buf.writeUInt16LE(ruling.clientBps, 1);
+    buf.writeUInt16LE(ruling.freelancerBps, 3);
+    return buf;
+  }
+  return Buffer.from([0]);
 }
 
 // =============== Instruction Builders ===============
@@ -114,7 +142,7 @@ export function ixInitializePlatform(
 ): TransactionInstruction {
   const { pda: platformConfigPda } = derivePlatformConfigPda(programId);
 
-  const data = encode(InitializePlatformSchema, { feeBps });
+  const data = encodeWithDiscriminator(DISCRIMINATORS.initialize_platform, InitializePlatformSchema, { feeBps });
 
   const keys = [
     { pubkey: admin, isSigner: true, isWritable: true },
@@ -154,7 +182,7 @@ export function ixCreateJob(
   const { pda: jobPda } = deriveJobPda(programId, client, jobId);
   const { pda: vaultPda } = deriveVaultPda(programId, jobPda);
 
-  const data = encode(CreateJobSchema, {
+  const data = encodeWithDiscriminator(DISCRIMINATORS.create_job, CreateJobSchema, {
     jobId,
     milestoneAmounts,
     milestoneDescriptions,
@@ -197,7 +225,7 @@ export function ixCreateMilestone(
   const { pda: jobPda } = deriveJobPda(programId, jobClient, jobId);
   const { pda: milestonePda } = deriveMilestonePda(programId, jobPda, milestoneId);
 
-  const data = encode(CreateMilestoneSchema, {
+  const data = encodeWithDiscriminator(DISCRIMINATORS.create_milestone, CreateMilestoneSchema, {
     milestoneId,
     amount,
     descriptionHash,
@@ -235,8 +263,8 @@ export function ixFundEscrow(
   const { pda: jobPda } = deriveJobPda(programId, jobClient, jobId);
   const { pda: vaultPda } = deriveVaultPda(programId, jobPda);
 
-  // FundEscrow doesn't have explicit data, just discriminant
-  const data = Buffer.from([2]); // Discriminator index
+  // FundEscrow has no args, just the 8-byte discriminator
+  const data = DISCRIMINATORS.fund_escrow;
 
   const keys = [
     { pubkey: client, isSigner: true, isWritable: true },
@@ -271,7 +299,7 @@ export function ixSubmitMilestone(
   const { pda: jobPda } = deriveJobPda(programId, jobClient, jobId);
   const { pda: milestonePda } = deriveMilestonePda(programId, jobPda, milestoneId);
 
-  const data = encode(SubmitMilestoneSchema, { submissionHash });
+  const data = encodeWithDiscriminator(DISCRIMINATORS.submit_milestone, SubmitMilestoneSchema, { submissionHash });
 
   const keys = [
     { pubkey: freelancer, isSigner: true, isWritable: false },
@@ -304,8 +332,8 @@ export function ixApproveMilestone(
   const { pda: jobPda } = deriveJobPda(programId, jobClient, jobId);
   const { pda: milestonePda } = deriveMilestonePda(programId, jobPda, milestoneId);
 
-  // ApproveMilestone doesn't have explicit data
-  const data = Buffer.from([5]); // Discriminator index
+  // ApproveMilestone has no args, just the 8-byte discriminator
+  const data = DISCRIMINATORS.approve_milestone;
 
   const keys = [
     { pubkey: client, isSigner: true, isWritable: false },
@@ -347,8 +375,8 @@ export function ixReleaseMilestone(
   const { pda: vaultPda } = deriveVaultPda(programId, jobPda);
   const { pda: platformConfigPda } = derivePlatformConfigPda(programId);
 
-  // ReleaseMilestone doesn't have explicit data
-  const data = Buffer.from([6]); // Discriminator index
+  // ReleaseMilestone has no args, just the 8-byte discriminator
+  const data = DISCRIMINATORS.release_milestone;
 
   const keys = [
     { pubkey: client, isSigner: true, isWritable: false },
@@ -386,8 +414,8 @@ export function ixCancelJob(
   const { pda: jobPda } = deriveJobPda(programId, jobClient, jobId);
   const { pda: vaultPda } = deriveVaultPda(programId, jobPda);
 
-  // CancelJob doesn't have explicit data
-  const data = Buffer.from([7]); // Discriminator index
+  // CancelJob has no args, just the 8-byte discriminator
+  const data = DISCRIMINATORS.cancel_job;
 
   const keys = [
     { pubkey: client, isSigner: true, isWritable: true },
@@ -424,7 +452,7 @@ export function ixOpenDispute(
   const { pda: disputePda } = deriveDisputePda(programId, jobPda);
   const { pda: platformConfigPda } = derivePlatformConfigPda(programId);
 
-  const data = encode(OpenDisputeSchema, { milestoneId });
+  const data = encodeWithDiscriminator(DISCRIMINATORS.open_dispute, OpenDisputeSchema, { milestoneId });
 
   const keys = [
     { pubkey: opener, isSigner: true, isWritable: true },
@@ -459,7 +487,7 @@ export function ixSubmitDisputeEvidence(
   const { pda: jobPda } = deriveJobPda(programId, jobClient, jobId);
   const { pda: disputePda } = deriveDisputePda(programId, jobPda);
 
-  const data = encode(SubmitDisputeEvidenceSchema, { evidenceHash });
+  const data = encodeWithDiscriminator(DISCRIMINATORS.submit_dispute_evidence, SubmitDisputeEvidenceSchema, { evidenceHash });
 
   const keys = [
     { pubkey: submitter, isSigner: true, isWritable: false },
@@ -504,21 +532,11 @@ export function ixResolveDispute(
   const { pda: vaultPda } = deriveVaultPda(programId, jobPda);
   const { pda: platformConfigPda } = derivePlatformConfigPda(programId);
 
-  // Encode ruling as string
-  let rulingStr: string;
-  if (ruling.__kind === "None") {
-    rulingStr = "None";
-  } else if (ruling.__kind === "ClientWins") {
-    rulingStr = "ClientWins";
-  } else if (ruling.__kind === "FreelancerWins") {
-    rulingStr = "FreelancerWins";
-  } else if (ruling.__kind === "Split") {
-    rulingStr = `Split(${ruling.clientBps},${ruling.freelancerBps})`;
-  } else {
-    rulingStr = "None";
-  }
-
-  const data = encode(ResolveDisputeSchema, { ruling: rulingStr });
+  // Encode ruling as proper Borsh enum (variant index + optional fields)
+  const data = Buffer.concat([
+    DISCRIMINATORS.resolve_dispute,
+    encodeDisputeRuling(ruling),
+  ]);
 
   const keys = [
     { pubkey: arbitrator, isSigner: true, isWritable: false },
@@ -553,7 +571,7 @@ export function ixSetPlatformFee(
 ): TransactionInstruction {
   const { pda: platformConfigPda } = derivePlatformConfigPda(programId);
 
-  const data = encode(SetPlatformFeeSchema, { newFeeBps });
+  const data = encodeWithDiscriminator(DISCRIMINATORS.set_platform_fee, SetPlatformFeeSchema, { newFeeBps });
 
   const keys = [
     { pubkey: admin, isSigner: true, isWritable: false },
@@ -581,13 +599,12 @@ export function ixWithdrawPlatformFees(
   admin: PublicKey,
   amount: bigint,
   recipient: PublicKey,
+  treasury: PublicKey,
   programId: PublicKey = PROGRAM_ID
 ): TransactionInstruction {
   const { pda: platformConfigPda } = derivePlatformConfigPda(programId);
-  // Treasury is derived from platform_config - we'll need to fetch it
-  const treasury = PublicKey.default; // This should be derived from platform_config
 
-  const data = encode(WithdrawPlatformFeesSchema, { amount });
+  const data = encodeWithDiscriminator(DISCRIMINATORS.withdraw_platform_fees, WithdrawPlatformFeesSchema, { amount });
 
   const keys = [
     { pubkey: admin, isSigner: true, isWritable: false },

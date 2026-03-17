@@ -20,7 +20,7 @@ import { PublicKey } from "@solana/web3.js";
 /**
  * The deployed program ID for the Freelance Marketplace
  */
-export const PROGRAM_ID = new PublicKey("BLs4UVLaq12mE1yGcuyud5LHWWQqyjJmCFQH2fmbXB9s");
+export const PROGRAM_ID = new PublicKey("Hzmfuj1scfA4UWNsKu82MopCsrvUEBGfeAtB79xYfXzK");
 
 /**
  * @deprecated Use PROGRAM_ID instead
@@ -120,7 +120,10 @@ export {
   FreelanceErrorCode,
   FreelanceClientError,
 
-  // Transaction results
+  // Wallet & transaction types
+  WalletSigner,
+  TransactionStatus,
+  OnTransactionStatus,
   FreelanceTxResult,
   FreelanceClientConfig,
 
