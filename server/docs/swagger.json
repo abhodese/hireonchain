@@ -417,6 +417,244 @@
         }
       }
     },
+    "/api/contracts/next-job-id": {
+      "get": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Get next available on-chain job ID",
+        "description": "Returns the next sequential on-chain job ID for use when building a createJob transaction. Called before the on-chain createJob instruction.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Next on-chain job ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "onChainJobId": {
+                      "type": "integer",
+                      "example": 1,
+                      "description": "Sequential on-chain job ID"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/contracts/create-onchain": {
+      "post": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Create on-chain contract record",
+        "description": "Called AFTER the on-chain createJob transaction succeeds. Saves the contract with PDA metadata to MongoDB. Only the job client can call this.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Contract created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contract": {
+                      "type": "object",
+                      "description": "The created Contract document"
+                    },
+                    "onChainJobId": {
+                      "type": "integer",
+                      "description": "Assigned on-chain job ID"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No freelancer assigned to job"
+          },
+          "403": {
+            "description": "Not authorized (not the job client)"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["jobId", "milestones", "txSignature"],
+                "properties": {
+                  "jobId": {
+                    "type": "string",
+                    "description": "MongoDB Job ID",
+                    "example": "6650f1a2b3c4d5e6f7890123"
+                  },
+                  "milestones": {
+                    "type": "array",
+                    "description": "Milestone definitions",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "number",
+                          "description": "Amount in SOL",
+                          "example": 1.5
+                        },
+                        "description": {
+                          "type": "string",
+                          "example": "Deliver MVP"
+                        }
+                      }
+                    }
+                  },
+                  "txSignature": {
+                    "type": "string",
+                    "description": "Solana transaction signature from createJob",
+                    "example": "5UfD...xYz"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/by-job/{jobId}": {
+      "get": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Get contract by job ID",
+        "description": "Fetches the on-chain contract associated with a specific job. Populates client and freelancer usernames and wallet addresses.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "MongoDB Job ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contract found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "jobId": { "type": "string" },
+                    "onChainJobId": { "type": "integer" },
+                    "clientWallet": { "type": "string" },
+                    "freelancerWallet": { "type": "string" },
+                    "totalAmount": { "type": "number", "description": "Amount in lamports" },
+                    "status": { "type": "string", "enum": ["created", "funded", "in_progress", "completed", "cancelled", "disputed"] },
+                    "milestones": { "type": "array", "items": { "type": "object" } },
+                    "transactions": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No contract for this job"
+          }
+        }
+      }
+    },
+    "/api/contracts/{id}/transaction": {
+      "post": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Record an on-chain transaction",
+        "description": "Generic endpoint to record any on-chain transaction and update contract/milestone status. Called AFTER the Solana transaction succeeds. Only the contract client or freelancer can call this.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "MongoDB Contract ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction recorded, updated contract returned"
+          },
+          "403": {
+            "description": "Not authorized (not client or freelancer)"
+          },
+          "404": {
+            "description": "Contract not found"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["type", "signature"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["fund", "submit", "approve", "release", "cancel", "dispute", "evidence", "resolve"],
+                    "description": "Transaction type — determines how contract/milestone status is updated",
+                    "example": "fund"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "Solana transaction signature",
+                    "example": "3Kx9...abc"
+                  },
+                  "milestoneId": {
+                    "type": "integer",
+                    "description": "Milestone index (required for submit, approve, release)",
+                    "example": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/contracts": {
       "post": {
         "tags": [

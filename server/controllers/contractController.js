@@ -1,6 +1,6 @@
 const Contract = require('../models/Contract');
 const Job = require('../models/Job');
-const { isValidSolanaAddress, verifyTransaction } = require('../utils/solana');
+const { getNextSequence } = require('../utils/counter');
 
 // @desc    Create a new contract
 // @route   POST /api/contracts
@@ -166,6 +166,160 @@ const disputeContract = async (req, res) => {
   }
 };
 
+// @desc    Get next on-chain job ID
+// @route   GET /api/contracts/next-job-id
+// @access  Private
+const getNextJobId = async (req, res) => {
+  try {
+    const nextId = await getNextSequence('onchain_job_id');
+    res.json({ onChainJobId: nextId });
+  } catch (error) {
+    console.error('Get next job ID error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create on-chain contract after successful blockchain transaction
+// @route   POST /api/contracts/create-onchain
+// @access  Private
+const createOnchainContract = async (req, res) => {
+  try {
+    const { jobId, milestones, txSignature } = req.body;
+    const job = await Job.findById(jobId)
+      .populate('client', 'walletAddress')
+      .populate('assignedTo', 'walletAddress');
+
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+
+    if (job.client._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    if (!job.assignedTo) {
+      return res.status(400).json({ message: 'No freelancer assigned' });
+    }
+
+    const onChainJobId = await getNextSequence('onchain_job_id');
+
+    const totalAmount = milestones.reduce(
+      (sum, m) => sum + parseFloat(m.amount) * 1_000_000_000,
+      0
+    );
+
+    const contract = await Contract.create({
+      jobId: job._id,
+      clientId: job.client._id,
+      freelancerId: job.assignedTo._id,
+      onChainJobId,
+      clientWallet: job.client.walletAddress,
+      freelancerWallet: job.assignedTo.walletAddress,
+      totalAmount,
+      status: 'created',
+      milestones: milestones.map((m, i) => ({
+        milestoneId: i,
+        amount: parseFloat(m.amount) * 1_000_000_000,
+        description: m.description,
+        status: 'pending',
+      })),
+      transactions: [{ type: 'create', signature: txSignature }],
+    });
+
+    job.onChainJobId = onChainJobId;
+    await job.save();
+
+    res.status(201).json({ contract, onChainJobId });
+  } catch (error) {
+    console.error('Create on-chain contract error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Record a transaction and update contract/milestone status
+// @route   POST /api/contracts/:id/transaction
+// @access  Private
+const recordTransaction = async (req, res) => {
+  try {
+    const { type, signature, milestoneId } = req.body;
+    const contract = await Contract.findById(req.params.id);
+
+    if (!contract) {
+      return res.status(404).json({ message: 'Contract not found' });
+    }
+
+    if (
+      contract.clientId.toString() !== req.user._id.toString() &&
+      contract.freelancerId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    contract.transactions.push({ type, signature, milestoneId });
+
+    const contractStatusMap = {
+      fund: 'funded',
+      cancel: 'cancelled',
+      dispute: 'disputed',
+    };
+    if (contractStatusMap[type]) {
+      contract.status = contractStatusMap[type];
+    }
+
+    if (milestoneId !== undefined && contract.milestones[milestoneId]) {
+      const milestoneStatusMap = {
+        submit: 'submitted',
+        approve: 'approved',
+        release: 'paid',
+      };
+      if (milestoneStatusMap[type]) {
+        contract.milestones[milestoneId].status = milestoneStatusMap[type];
+      }
+    }
+
+    if (type === 'release') {
+      const allPaid = contract.milestones.every(m => m.status === 'paid');
+      if (allPaid) {
+        contract.status = 'completed';
+      }
+    }
+
+    await contract.save();
+    res.json(contract);
+  } catch (error) {
+    console.error('Record transaction error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get contract by job ID
+// @route   GET /api/contracts/by-job/:jobId
+// @access  Private
+const getContractByJob = async (req, res) => {
+  try {
+    const contract = await Contract.findOne({ jobId: req.params.jobId })
+      .populate('clientId', 'username walletAddress')
+      .populate('freelancerId', 'username walletAddress');
+
+    if (!contract) {
+      return res.status(404).json({ message: 'No contract for this job' });
+    }
+
+    // Verify authorization
+    if (
+      contract.clientId._id.toString() !== req.user._id.toString() &&
+      contract.freelancerId._id.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    res.json(contract);
+  } catch (error) {
+    console.error('Get contract by job error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createContract,
   getContracts,
@@ -173,4 +327,8 @@ module.exports = {
   updateContractStatus,
   getContractsByJob,
   disputeContract,
+  getNextJobId,
+  createOnchainContract,
+  recordTransaction,
+  getContractByJob,
 };
