@@ -1,6 +1,13 @@
 const Contract = require('../models/Contract');
 const Job = require('../models/Job');
 const { getNextSequence } = require('../utils/counter');
+const { verifyTransaction } = require('../utils/solana');
+
+const CLIENT_ONLY_TYPES = ['fund', 'approve', 'release', 'cancel'];
+
+const FREELANCER_ONLY_TYPES = ['submit'];
+
+const ON_CHAIN_TYPES = ['fund', 'submit', 'approve', 'release', 'cancel', 'dispute', 'resolve'];
 
 // @desc    Create a new contract
 // @route   POST /api/contracts
@@ -251,11 +258,40 @@ const recordTransaction = async (req, res) => {
       return res.status(404).json({ message: 'Contract not found' });
     }
 
-    if (
-      contract.clientId.toString() !== req.user._id.toString() &&
-      contract.freelancerId.toString() !== req.user._id.toString()
-    ) {
+    const isClient = contract.clientId.toString() === req.user._id.toString();
+    const isFreelancer = contract.freelancerId.toString() === req.user._id.toString();
+
+    if (!isClient && !isFreelancer) {
       return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    if (CLIENT_ONLY_TYPES.includes(type) && !isClient) {
+      return res.status(403).json({ message: 'Only the client can perform this action' });
+    }
+
+    if (FREELANCER_ONLY_TYPES.includes(type) && !isFreelancer) {
+      return res.status(403).json({ message: 'Only the freelancer can perform this action' });
+    }
+
+    if (ON_CHAIN_TYPES.includes(type)) {
+      if (!signature) {
+        return res.status(400).json({ message: 'Transaction signature is required' });
+      }
+
+      const verification = await verifyTransaction(signature);
+
+      if (!verification.valid) {
+        console.error('Transaction verification failed:', verification.error);
+        return res.status(400).json({
+          message: 'Transaction verification failed',
+          error: verification.error,
+        });
+      }
+
+      const existingTx = contract.transactions.find(tx => tx.signature === signature);
+      if (existingTx) {
+        return res.status(400).json({ message: 'Transaction already recorded' });
+      }
     }
 
     contract.transactions.push({ type, signature, milestoneId });

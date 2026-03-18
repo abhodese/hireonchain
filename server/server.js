@@ -14,14 +14,40 @@ const contractRoutes = require('./routes/contracts');
 const PORT = Number(process.env.PORT) || 5000;
 const app = express();
 
+const sanitizeInput = (obj) => {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeInput);
+  const clean = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (key.startsWith('$') || key.includes('.')) continue;
+    clean[key] = sanitizeInput(value);
+  }
+  return clean;
+};
+
 // Core Middleware
 app.use(cors());
 app.use(express.json());
 
+app.use((req, _res, next) => {
+  if (req.body) req.body = sanitizeInput(req.body);
+  if (req.query) req.query = sanitizeInput(req.query);
+  if (req.params) req.params = sanitizeInput(req.params);
+  next();
+});
+
 // Debug Middleware – NACH express.json()
+const SENSITIVE_FIELDS = ['password', 'token', 'signature', 'secret', 'nonce'];
 app.use((req, res, next) => {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('A', req.method, req.url, 'BODY:', req.body);
+    const safeBody = req.body && typeof req.body === 'object'
+      ? Object.fromEntries(
+          Object.entries(req.body).map(([k, v]) =>
+            SENSITIVE_FIELDS.includes(k) ? [k, '[REDACTED]'] : [k, v]
+          )
+        )
+      : req.body;
+    console.log('A', req.method, req.url, 'BODY:', safeBody);
   }
   next();
 });

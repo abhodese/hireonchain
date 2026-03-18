@@ -15,17 +15,7 @@
 
 // =============== Program ID ===============
 
-import { PublicKey } from "@solana/web3.js";
-
-/**
- * The deployed program ID for the Freelance Marketplace
- */
-export const PROGRAM_ID = new PublicKey("Hzmfuj1scfA4UWNsKu82MopCsrvUEBGfeAtB79xYfXzK");
-
-/**
- * @deprecated Use PROGRAM_ID instead
- */
-export const ESCROW_PROGRAM_ID = PROGRAM_ID;
+export { PROGRAM_ID, ESCROW_PROGRAM_ID, getProgramId } from "./programId";
 
 
 // =============== Core Client ===============
@@ -172,6 +162,7 @@ export {
 // =============== Default Export ===============
 
 import { FreelanceClient } from "./client";
+import { PROGRAM_ID } from "./programId";
 
 export default {
   FreelanceClient,

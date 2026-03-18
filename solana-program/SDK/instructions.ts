@@ -22,8 +22,9 @@ import {
   deriveVaultPda,
 } from "./pdas";
 
-// Program ID - matches the deployed program on devnet
-export const PROGRAM_ID = new PublicKey("Hzmfuj1scfA4UWNsKu82MopCsrvUEBGfeAtB79xYfXzK");
+// Program ID - loaded from environment variable via programId module
+import { PROGRAM_ID } from "./programId";
+export { PROGRAM_ID };
 
 const DISCRIMINATORS = {
   initialize_platform: Buffer.from([119, 201, 101, 45, 75, 122, 89, 3]),

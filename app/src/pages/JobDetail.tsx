@@ -9,6 +9,7 @@ import { WalletButton } from '../components/WalletButton';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useFreelanceClient } from '../hooks/useFreelanceClient';
 import { useWalletSigner } from '../hooks/useWalletSigner';
+import { fetchPlatformConfig, PROGRAM_ID } from '@sdk/index';
 
 interface Proposal {
   _id: string;
@@ -342,8 +343,29 @@ const JobDetail: React.FC = () => {
     if (errorMsg.includes('Simulation failed')) {
       return 'Transaction simulation failed. The escrow may already be funded or there was a program error.';
     }
+    if (errorMsg.includes('MilestoneNotSubmitted') || errorMsg.includes('not submitted')) {
+      return 'This milestone has not been submitted yet.';
+    }
+    if (errorMsg.includes('MilestoneAlreadySubmitted') || errorMsg.includes('already submitted')) {
+      return 'This milestone has already been submitted.';
+    }
+    if (errorMsg.includes('MilestoneAlreadyApproved') || errorMsg.includes('already approved')) {
+      return 'This milestone has already been approved.';
+    }
+    if (errorMsg.includes('MilestoneNotApproved') || errorMsg.includes('not approved')) {
+      return 'This milestone must be approved before payment can be released.';
+    }
+    if (errorMsg.includes('JobNotFunded') || errorMsg.includes('not funded')) {
+      return 'The escrow must be funded before milestone operations.';
+    }
+    if (errorMsg.includes('DisputeActive') || errorMsg.includes('dispute active')) {
+      return 'Cannot perform this action while a dispute is active.';
+    }
+    if (errorMsg.includes('Platform not initialized')) {
+      return 'Platform not initialized. Contact admin.';
+    }
 
-    return errorMsg || 'Failed to fund escrow. Please try again.';
+    return errorMsg || 'Transaction failed. Please try again.';
   };
 
   const handleFundEscrow = async () => {
@@ -381,6 +403,199 @@ const JobDetail: React.FC = () => {
       setContractError(parseOnChainError(error));
     } finally {
       setCreatingContract(false);
+    }
+  };
+
+  const [milestoneOperationLoading, setMilestoneOperationLoading] = useState<number | null>(null);
+  const [submissionHash, setSubmissionHash] = useState<{ [key: number]: string }>({});
+
+  const handleSubmitMilestone = async (milestoneId: number) => {
+    if (!contract || !walletSigner) {
+      setContractError('Missing contract or wallet connection');
+      return;
+    }
+
+    const hash = submissionHash[milestoneId];
+    if (!hash || hash.trim() === '') {
+      setContractError('Please enter a submission hash (e.g., IPFS CID or work link)');
+      return;
+    }
+
+    setMilestoneOperationLoading(milestoneId);
+    setContractError('');
+
+    try {
+      const freelancerPubkey = walletSigner.publicKey;
+      const clientPubkey = new PublicKey(contract.clientWallet);
+
+      const result = await sdkClient.submitMilestone(
+        walletSigner,
+        freelancerPubkey,
+        clientPubkey,
+        BigInt(contract.onChainJobId),
+        milestoneId,
+        hash
+      );
+
+      await api.post(`/api/contracts/${contract._id}/transaction`, {
+        type: 'submit',
+        signature: result.txId,
+        milestoneId,
+      });
+
+      const contractRes = await api.get(`/api/contracts/by-job/${job?._id}`);
+      setContract(contractRes.data);
+
+      setSubmissionHash(prev => {
+        const updated = { ...prev };
+        delete updated[milestoneId];
+        return updated;
+      });
+    } catch (error: any) {
+      console.error('Submit milestone failed:', error);
+      setContractError(parseOnChainError(error));
+    } finally {
+      setMilestoneOperationLoading(null);
+    }
+  };
+
+  const handleApproveMilestone = async (milestoneId: number) => {
+    if (!contract || !walletSigner) {
+      setContractError('Missing contract or wallet connection');
+      return;
+    }
+
+    setMilestoneOperationLoading(milestoneId);
+    setContractError('');
+
+    try {
+      const clientPubkey = new PublicKey(contract.clientWallet);
+
+      const result = await sdkClient.approveMilestone(
+        walletSigner,
+        clientPubkey,
+        clientPubkey,
+        BigInt(contract.onChainJobId),
+        milestoneId
+      );
+
+      await api.post(`/api/contracts/${contract._id}/transaction`, {
+        type: 'approve',
+        signature: result.txId,
+        milestoneId,
+      });
+
+      // Refresh contract data
+      const contractRes = await api.get(`/api/contracts/by-job/${job?._id}`);
+      setContract(contractRes.data);
+    } catch (error: any) {
+      console.error('Approve milestone failed:', error);
+      setContractError(parseOnChainError(error));
+    } finally {
+      setMilestoneOperationLoading(null);
+    }
+  };
+
+  const handleReleaseMilestone = async (milestoneId: number) => {
+    if (!contract || !walletSigner) {
+      setContractError('Missing contract or wallet connection');
+      return;
+    }
+
+    setMilestoneOperationLoading(milestoneId);
+    setContractError('');
+
+    try {
+      const platformConfig = await fetchPlatformConfig(sdkClient.connection, PROGRAM_ID);
+      if (!platformConfig) {
+        throw new Error('Platform not initialized. Contact admin.');
+      }
+
+      const clientPubkey = new PublicKey(contract.clientWallet);
+      const freelancerPubkey = new PublicKey(contract.freelancerWallet);
+
+      const result = await sdkClient.releaseMilestone(
+        walletSigner,
+        clientPubkey,
+        clientPubkey,
+        BigInt(contract.onChainJobId),
+        milestoneId,
+        freelancerPubkey,
+        platformConfig.treasury
+      );
+
+      await api.post(`/api/contracts/${contract._id}/transaction`, {
+        type: 'release',
+        signature: result.txId,
+        milestoneId,
+      });
+
+      const [contractRes] = await Promise.all([
+        api.get(`/api/contracts/by-job/${job?._id}`),
+        sdkClient.connection.getBalance(walletSigner.publicKey).then(b => {
+          setWalletBalance(b / LAMPORTS_PER_SOL);
+        }),
+      ]);
+      setContract(contractRes.data);
+    } catch (error: any) {
+      console.error('Release milestone failed:', error);
+      setContractError(parseOnChainError(error));
+    } finally {
+      setMilestoneOperationLoading(null);
+    }
+  };
+
+  const handleCancelJob = async () => {
+    if (!contract || !walletSigner) {
+      setContractError('Missing contract or wallet connection');
+      return;
+    }
+
+    if (
+      !window.confirm(
+        'Are you sure you want to cancel this job? This will refund any remaining escrow and cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
+    setMilestoneOperationLoading(-1);
+    setContractError('');
+
+    try {
+      const clientPubkey = new PublicKey(contract.clientWallet);
+
+      const result = await sdkClient.cancelJob(
+        walletSigner,
+        clientPubkey,
+        clientPubkey,
+        BigInt(contract.onChainJobId)
+      );
+
+      await api.post(`/api/contracts/${contract._id}/transaction`, {
+        type: 'cancel',
+        signature: result.txId,
+      });
+
+      if (job) {
+        await api.put(`/api/jobs/${job._id}`, { status: 'cancelled' });
+      }
+
+      const [updatedJob, contractRes] = await Promise.all([
+        api.get(`/api/jobs/${id}`),
+        api.get(`/api/contracts/by-job/${job?._id}`),
+        sdkClient.connection.getBalance(walletSigner.publicKey).then(b => {
+          setWalletBalance(b / LAMPORTS_PER_SOL);
+        }),
+      ]);
+
+      setJob(updatedJob.data);
+      setContract(contractRes.data);
+    } catch (error: any) {
+      console.error('Cancel job failed:', error);
+      setContractError(parseOnChainError(error));
+    } finally {
+      setMilestoneOperationLoading(null);
     }
   };
 
@@ -518,6 +733,7 @@ const JobDetail: React.FC = () => {
               </div>
 
               <h3>Milestones</h3>
+              {contractError && <div className="error-message">{contractError}</div>}
               <div className="milestones-list">
                 {contract.milestones.map((m, i) => (
                   <div key={i} className={`milestone-item ${m.status}`}>
@@ -529,9 +745,88 @@ const JobDetail: React.FC = () => {
                       <span className={`milestone-status ${m.status}`}>{m.status}</span>
                     </div>
                     <p className="milestone-desc">{m.description}</p>
+
+                    {/* Milestone Action Buttons - Only show when contract is funded */}
+                    {contract.status === 'funded' && walletSigner && (
+                      <div className="milestone-actions">
+                        {/* Freelancer: Submit work for pending milestones */}
+                        {isAssigned && m.status === 'pending' && (
+                          <div className="submit-milestone-form">
+                            <input
+                              type="text"
+                              placeholder="Submission hash (IPFS CID or link)"
+                              value={submissionHash[i] || ''}
+                              onChange={e =>
+                                setSubmissionHash(prev => ({ ...prev, [i]: e.target.value }))
+                              }
+                              className="submission-input"
+                            />
+                            <button
+                              onClick={() => handleSubmitMilestone(i)}
+                              disabled={milestoneOperationLoading === i}
+                              className="milestone-action-btn submit-btn"
+                            >
+                              {milestoneOperationLoading === i ? 'Submitting...' : 'Submit Work'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Client: Approve submitted milestones */}
+                        {isOwner && m.status === 'submitted' && (
+                          <div className="milestone-btn-group">
+                            <button
+                              onClick={() => handleApproveMilestone(i)}
+                              disabled={milestoneOperationLoading === i}
+                              className="milestone-action-btn approve-btn"
+                            >
+                              {milestoneOperationLoading === i ? 'Approving...' : 'Approve'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Client: Release payment for approved milestones */}
+                        {isOwner && m.status === 'approved' && (
+                          <div className="milestone-btn-group">
+                            <button
+                              onClick={() => handleReleaseMilestone(i)}
+                              disabled={milestoneOperationLoading === i}
+                              className="milestone-action-btn release-btn"
+                            >
+                              {milestoneOperationLoading === i ? 'Releasing...' : 'Release Payment'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Status messages for paid milestones */}
+                        {m.status === 'paid' && (
+                          <div className="milestone-paid-notice">
+                            <span className="paid-icon">✓</span> Payment released
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
+
+              {/* Cancel Job button for client - only when funded and no approved milestones */}
+              {contract.status === 'funded' && isOwner && walletSigner && (
+                <div className="cancel-job-section">
+                  <button
+                    onClick={handleCancelJob}
+                    disabled={milestoneOperationLoading === -1}
+                    className="cancel-job-btn"
+                  >
+                    {milestoneOperationLoading === -1 ? 'Cancelling...' : 'Cancel Job & Refund'}
+                  </button>
+                  <p className="cancel-note">
+                    <small>
+                      Cancelling will refund any remaining escrow balance to your wallet. This
+                      cannot be undone.
+                    </small>
+                  </p>
+                </div>
+              )}
 
               {/* Fund escrow button for client */}
               {contract.status === 'created' && isOwner && (
