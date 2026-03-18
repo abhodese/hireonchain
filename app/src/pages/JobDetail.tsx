@@ -3,11 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import api from '../utils/api';
-import { createContract } from '../utils/contractUtils';
 import { WalletButton } from '../components/WalletButton';
-import { walletAdapter } from '../utils/adapter';
-import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { useFreelanceClient } from '../hooks/useFreelanceClient';
+import { useWalletSigner } from '../hooks/useWalletSigner';
 
 interface Proposal {
   _id: string;
@@ -21,6 +22,30 @@ interface Proposal {
   price: number;
   status: string;
   createdAt: string;
+}
+
+interface Milestone {
+  amount: string;
+  description: string;
+}
+
+interface Contract {
+  _id: string;
+  onChainJobId: number;
+  status: string;
+  clientWallet: string;
+  freelancerWallet: string;
+  milestones: {
+    milestoneId: number;
+    amount: number;
+    description: string;
+    status: string;
+  }[];
+  transactions: {
+    type: string;
+    signature: string;
+    timestamp: string;
+  }[];
 }
 
 interface Job {
@@ -43,7 +68,7 @@ interface Job {
     walletAddress: string;
   };
   proposals: Proposal[];
-  contractAddress?: string;
+  onChainJobId?: number;
 }
 
 const proposalSchema = z.object({
@@ -59,7 +84,6 @@ type ProposalFormData = z.infer<typeof proposalSchema>;
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { walletProvider } = useAppKitProvider('solana');
   const { address, isConnected } = useAppKitAccount();
 
   const [job, setJob] = useState<Job | null>(null);
@@ -84,10 +108,16 @@ const JobDetail: React.FC = () => {
     },
   });
 
-  // Contract creation state
+  // On-chain contract creation state
+  const sdkClient = useFreelanceClient();
+  const walletSigner = useWalletSigner();
   const [creatingContract, setCreatingContract] = useState(false);
   const [contractError, setContractError] = useState('');
-  const [contractAddress, setContractAddress] = useState('');
+  const [contract, setContract] = useState<Contract | null>(null);
+  const [milestones, setMilestones] = useState<Milestone[]>([{ amount: '', description: '' }]);
+
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [loadingBalance, setLoadingBalance] = useState(false);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -113,6 +143,45 @@ const JobDetail: React.FC = () => {
       fetchJob();
     }
   }, [id]);
+
+  useEffect(() => {
+    const fetchContract = async () => {
+      if (!job?._id) return;
+      try {
+        const response = await api.get(`/api/contracts/by-job/${job._id}`);
+        setContract(response.data);
+      } catch (error: any) {
+        // 404 means no contract exists yet - that's fine
+        if (error.response?.status !== 404) {
+          console.error('Error fetching contract:', error);
+        }
+      }
+    };
+
+    fetchContract();
+  }, [job?._id]);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!isConnected || !address || !walletSigner) {
+        setWalletBalance(null);
+        return;
+      }
+
+      setLoadingBalance(true);
+      try {
+        const balance = await sdkClient.connection.getBalance(walletSigner.publicKey);
+        setWalletBalance(balance / LAMPORTS_PER_SOL);
+      } catch (error) {
+        console.error('Error fetching wallet balance:', error);
+        setWalletBalance(null);
+      } finally {
+        setLoadingBalance(false);
+      }
+    };
+
+    fetchBalance();
+  }, [isConnected, address, walletSigner, sdkClient.connection]);
 
   const onProposalSubmit = async (data: ProposalFormData) => {
     if (!isConnected || !address) {
@@ -164,14 +233,44 @@ const JobDetail: React.FC = () => {
     }
   };
 
-  const handleCreateContract = async () => {
-    if (!job || !job.assignedTo) {
-      alert('Job must be assigned to a freelancer first');
+  const addMilestone = () => {
+    setMilestones([...milestones, { amount: '', description: '' }]);
+  };
+
+  const removeMilestone = (index: number) => {
+    if (milestones.length > 1) {
+      setMilestones(milestones.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateMilestone = (index: number, field: 'amount' | 'description', value: string) => {
+    const updated = [...milestones];
+    updated[index][field] = value;
+    setMilestones(updated);
+  };
+
+  const validateMilestones = (): boolean => {
+    for (const m of milestones) {
+      if (!m.amount || !m.description) {
+        setContractError('All milestones must have amount and description');
+        return false;
+      }
+      if (parseFloat(m.amount) <= 0) {
+        setContractError('Milestone amounts must be greater than 0');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // On-chain contract creation handler
+  const handleCreateOnchainContract = async () => {
+    if (!job || !job.assignedTo || !walletSigner) {
+      setContractError('Missing job, freelancer assignment, or wallet connection');
       return;
     }
 
-    if (!contractAddress) {
-      setContractError('Please enter a contract address');
+    if (!validateMilestones()) {
       return;
     }
 
@@ -179,24 +278,107 @@ const JobDetail: React.FC = () => {
     setContractError('');
 
     try {
-      const adapter = walletAdapter(walletProvider, address);
+      const {
+        data: { onChainJobId },
+      } = await api.get('/api/contracts/next-job-id');
 
-      if (!adapter || !adapter.publicKey) {
-        throw new Error('Missing public key');
-      }
+      const amounts = milestones.map(m => BigInt(Math.round(parseFloat(m.amount) * 1_000_000_000)));
+      const descriptions = milestones.map(m => m.description);
 
-      const result = await createContract(job._id, contractAddress, job.price, adapter);
+      const result = await sdkClient.createJob(
+        walletSigner,
+        new PublicKey(job.client.walletAddress),
+        new PublicKey(job.assignedTo.walletAddress),
+        BigInt(onChainJobId),
+        amounts,
+        descriptions
+      );
 
-      if (result.success) {
-        const updatedJob = await api.get(`/api/jobs/${id}`);
-        setJob(updatedJob.data);
-        alert('Contract created successfully');
-      } else {
-        setContractError(result.error || 'Failed to create contract');
-      }
-    } catch (error) {
-      console.error('Error creating contract:', error);
-      setContractError('Failed to create contract');
+      await api.post('/api/contracts/create-onchain', {
+        jobId: job._id,
+        onChainJobId,
+        milestones: milestones.map(m => ({
+          amount: parseFloat(m.amount),
+          description: m.description,
+        })),
+        txSignature: result.txId,
+      });
+
+      const [updatedJob, contractRes] = await Promise.all([
+        api.get(`/api/jobs/${id}`),
+        api.get(`/api/contracts/by-job/${job._id}`),
+      ]);
+      setJob(updatedJob.data);
+      setContract(contractRes.data);
+    } catch (error: any) {
+      console.error('Create on-chain contract error:', error);
+      setContractError(error.message || 'Failed to create on-chain contract');
+    } finally {
+      setCreatingContract(false);
+    }
+  };
+
+  const parseOnChainError = (error: any): string => {
+    const errorMsg = error?.message || '';
+
+    if (errorMsg.includes('JobAlreadyFunded') || errorMsg.includes('already funded')) {
+      return 'This escrow has already been funded.';
+    }
+    if (errorMsg.includes('insufficient funds') || errorMsg.includes('InsufficientFunds')) {
+      return 'Insufficient SOL balance to fund this escrow. Please add more SOL to your wallet.';
+    }
+    if (errorMsg.includes('InvalidJob') || errorMsg.includes('AccountNotInitialized')) {
+      return 'The on-chain job account was not found. Please recreate the contract.';
+    }
+    if (errorMsg.includes('NotAuthorized') || errorMsg.includes('owner')) {
+      return 'You are not authorized to fund this escrow. Only the client can fund.';
+    }
+    if (errorMsg.includes('User rejected') || errorMsg.includes('UserRejected')) {
+      return 'Transaction was rejected in wallet.';
+    }
+    if (errorMsg.includes('blockhash')) {
+      return 'Transaction expired. Please try again.';
+    }
+    if (errorMsg.includes('Simulation failed')) {
+      return 'Transaction simulation failed. The escrow may already be funded or there was a program error.';
+    }
+
+    return errorMsg || 'Failed to fund escrow. Please try again.';
+  };
+
+  const handleFundEscrow = async () => {
+    if (!contract || !walletSigner) {
+      setContractError('Missing contract or wallet connection');
+      return;
+    }
+
+    setCreatingContract(true);
+    setContractError('');
+
+    try {
+      const clientPubkey = new PublicKey(contract.clientWallet);
+      const result = await sdkClient.fundEscrow(
+        walletSigner,
+        clientPubkey,
+        clientPubkey,
+        BigInt(contract.onChainJobId)
+      );
+
+      await api.post(`/api/contracts/${contract._id}/transaction`, {
+        type: 'fund',
+        signature: result.txId,
+      });
+
+      const [contractRes] = await Promise.all([
+        api.get(`/api/contracts/by-job/${job?._id}`),
+        sdkClient.connection.getBalance(walletSigner.publicKey).then(b => {
+          setWalletBalance(b / LAMPORTS_PER_SOL);
+        }),
+      ]);
+      setContract(contractRes.data);
+    } catch (error: any) {
+      console.error('Fund escrow failed:', error);
+      setContractError(parseOnChainError(error));
     } finally {
       setCreatingContract(false);
     }
@@ -213,6 +395,8 @@ const JobDetail: React.FC = () => {
   const isOwner = userId === job.client._id;
   const isAssigned = job.assignedTo && userId === job.assignedTo._id;
   const hasProposed = job.proposals.some(p => p.freelancer._id === userId);
+
+  const totalMilestoneAmount = milestones.reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0);
 
   return (
     <div className="job-detail-page">
@@ -262,53 +446,185 @@ const JobDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Contract creation section for assigned jobs */}
-          {isConnected &&
-            job.status === 'in_progress' &&
-            !job.contractAddress &&
-            (isOwner || isAssigned) && (
-              <div className="contract-section">
-                <h2>Create Contract</h2>
-                <p>Create a smart contract to secure the payment for this job.</p>
+          {/* On-chain contract creation section for assigned jobs */}
+          {isConnected && job.status === 'in_progress' && !contract && isOwner && (
+            <div className="contract-section">
+              <h2>Create On-Chain Contract</h2>
+              <p>Define milestones for this job. Each milestone will be paid out when completed.</p>
 
-                <div className="contract-form">
-                  <div className="form-group">
-                    <label htmlFor="contractAddress">Contract Address</label>
-                    <input
-                      type="text"
-                      id="contractAddress"
-                      value={contractAddress}
-                      onChange={e => setContractAddress(e.target.value)}
-                      placeholder="Enter Solana contract address"
-                    />
+              <div className="milestones-form">
+                <h3>Milestones</h3>
+                {milestones.map((milestone, index) => (
+                  <div key={index} className="milestone-row">
+                    <div className="milestone-number">{index + 1}</div>
+                    <div className="milestone-inputs">
+                      <input
+                        type="number"
+                        placeholder="Amount (SOL)"
+                        value={milestone.amount}
+                        onChange={e => updateMilestone(index, 'amount', e.target.value)}
+                        step="0.01"
+                        min="0"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Description (e.g., Initial design mockups)"
+                        value={milestone.description}
+                        onChange={e => updateMilestone(index, 'description', e.target.value)}
+                      />
+                    </div>
+                    {milestones.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeMilestone(index)}
+                        className="remove-milestone-btn"
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
+                ))}
+                <button type="button" onClick={addMilestone} className="add-milestone-btn">
+                  + Add Milestone
+                </button>
 
-                  {contractError && <div className="error-message">{contractError}</div>}
-
-                  <button
-                    onClick={handleCreateContract}
-                    disabled={creatingContract}
-                    className="create-contract-btn"
-                  >
-                    {creatingContract ? 'Creating...' : 'Create Contract'}
-                  </button>
+                <div className="milestone-total">
+                  <strong>Total: {totalMilestoneAmount.toFixed(4)} SOL</strong>
+                  {totalMilestoneAmount > job.price && (
+                    <span className="warning"> (exceeds budget of {job.price} SOL)</span>
+                  )}
                 </div>
               </div>
-            )}
 
-          {/* Contract details if exists */}
-          {job.contractAddress && (
+              {contractError && <div className="error-message">{contractError}</div>}
+
+              <button
+                onClick={handleCreateOnchainContract}
+                disabled={creatingContract || totalMilestoneAmount > job.price}
+                className="create-contract-btn"
+              >
+                {creatingContract ? 'Creating Contract...' : 'Create On-Chain Contract'}
+              </button>
+            </div>
+          )}
+
+          {/* Existing contract display */}
+          {contract && (
             <div className="contract-info">
               <h2>Contract Information</h2>
-              <p>
-                <strong>Contract Address:</strong> {job.contractAddress}
-              </p>
-              <button
-                onClick={() => navigate(`/contracts/${job.contractAddress}`)}
-                className="view-contract-btn"
-              >
-                View Contract Details
-              </button>
+              <div className="contract-status">
+                <span className={`status-badge ${contract.status}`}>{contract.status}</span>
+                <span className="onchain-id">On-Chain Job ID: {contract.onChainJobId}</span>
+              </div>
+
+              <h3>Milestones</h3>
+              <div className="milestones-list">
+                {contract.milestones.map((m, i) => (
+                  <div key={i} className={`milestone-item ${m.status}`}>
+                    <div className="milestone-header">
+                      <span className="milestone-num">Milestone {i + 1}</span>
+                      <span className="milestone-amount">
+                        {(m.amount / 1_000_000_000).toFixed(4)} SOL
+                      </span>
+                      <span className={`milestone-status ${m.status}`}>{m.status}</span>
+                    </div>
+                    <p className="milestone-desc">{m.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Fund escrow button for client */}
+              {contract.status === 'created' && isOwner && (
+                <div className="fund-escrow-section">
+                  <h3>Fund Escrow</h3>
+                  <p>Fund the escrow to enable milestone payments.</p>
+
+                  {/* Show total amount required */}
+                  <div className="funding-amount-info">
+                    <p>
+                      <strong>Total Required:</strong>{' '}
+                      {(
+                        contract.milestones.reduce((sum, m) => sum + m.amount, 0) / LAMPORTS_PER_SOL
+                      ).toFixed(4)}{' '}
+                      SOL
+                    </p>
+
+                    {/* Show wallet balance */}
+                    {loadingBalance ? (
+                      <p className="balance-loading">Loading balance...</p>
+                    ) : walletBalance !== null ? (
+                      <p>
+                        <strong>Your Balance:</strong> {walletBalance.toFixed(4)} SOL
+                        {walletBalance <
+                          contract.milestones.reduce((sum, m) => sum + m.amount, 0) /
+                            LAMPORTS_PER_SOL && (
+                          <span className="balance-warning"> (Insufficient funds)</span>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="balance-error">Unable to load balance</p>
+                    )}
+                  </div>
+
+                  {/* Wallet not connected */}
+                  {!walletSigner && (
+                    <div className="warning-message">
+                      <p>Please connect your wallet to fund the escrow.</p>
+                      <WalletButton />
+                    </div>
+                  )}
+
+                  {/* Error display */}
+                  {contractError && <div className="error-message">{contractError}</div>}
+
+                  {/* Fund button */}
+                  {walletSigner && (
+                    <button
+                      onClick={handleFundEscrow}
+                      disabled={
+                        creatingContract ||
+                        loadingBalance ||
+                        (walletBalance !== null &&
+                          walletBalance <
+                            contract.milestones.reduce((sum, m) => sum + m.amount, 0) /
+                              LAMPORTS_PER_SOL)
+                      }
+                      className="fund-escrow-btn"
+                    >
+                      {creatingContract ? 'Funding...' : 'Fund Escrow'}
+                    </button>
+                  )}
+
+                  <p className="funding-note">
+                    <small>
+                      Note: Funding will transfer the total amount to a secure escrow account on
+                      Solana. Funds will be released to the freelancer as milestones are completed.
+                    </small>
+                  </p>
+                </div>
+              )}
+
+              {/* Transaction history */}
+              {contract.transactions.length > 0 && (
+                <div className="transaction-history">
+                  <h3>Transaction History</h3>
+                  <ul>
+                    {contract.transactions.map((tx, i) => (
+                      <li key={i}>
+                        <span className="tx-type">{tx.type}</span>
+                        <a
+                          href={`https://explorer.solana.com/tx/${tx.signature}?cluster=devnet`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="tx-link"
+                        >
+                          {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 

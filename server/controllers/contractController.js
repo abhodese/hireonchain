@@ -184,7 +184,12 @@ const getNextJobId = async (req, res) => {
 // @access  Private
 const createOnchainContract = async (req, res) => {
   try {
-    const { jobId, milestones, txSignature } = req.body;
+    const { jobId, milestones, txSignature, onChainJobId } = req.body;
+
+    if (onChainJobId === undefined || onChainJobId === null) {
+      return res.status(400).json({ message: 'onChainJobId is required' });
+    }
+
     const job = await Job.findById(jobId)
       .populate('client', 'walletAddress')
       .populate('assignedTo', 'walletAddress');
@@ -200,8 +205,6 @@ const createOnchainContract = async (req, res) => {
     if (!job.assignedTo) {
       return res.status(400).json({ message: 'No freelancer assigned' });
     }
-
-    const onChainJobId = await getNextSequence('onchain_job_id');
 
     const totalAmount = milestones.reduce(
       (sum, m) => sum + parseFloat(m.amount) * 1_000_000_000,

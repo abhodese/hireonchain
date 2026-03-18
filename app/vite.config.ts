@@ -14,6 +14,7 @@ export default defineConfig({
         Buffer: true,
         process: true,
       },
+      protocolImports: true,
     }),
   ],
   resolve: {
@@ -23,6 +24,20 @@ export default defineConfig({
       stream: 'stream-browserify',
       https: 'https-browserify',
       url: 'url',
+      '@solana/web3.js': path.resolve(__dirname, './node_modules/@solana/web3.js'),
+      '@coral-xyz/borsh': path.resolve(__dirname, './node_modules/@coral-xyz/borsh'),
+    },
+    dedupe: ['@solana/web3.js', '@coral-xyz/borsh'],
+  },
+  define: {
+    Buffer: 'globalThis.Buffer',
+  },
+  optimizeDeps: {
+    include: ['buffer'],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
     },
   },
 });

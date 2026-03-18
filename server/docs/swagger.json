@@ -502,12 +502,17 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["jobId", "milestones", "txSignature"],
+                "required": ["jobId", "onChainJobId", "milestones", "txSignature"],
                 "properties": {
                   "jobId": {
                     "type": "string",
                     "description": "MongoDB Job ID",
                     "example": "6650f1a2b3c4d5e6f7890123"
+                  },
+                  "onChainJobId": {
+                    "type": "integer",
+                    "description": "The on-chain job ID obtained from GET /next-job-id and used in the createJob transaction",
+                    "example": 1
                   },
                   "milestones": {
                     "type": "array",

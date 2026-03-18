@@ -63,11 +63,6 @@ const JobSchema = new mongoose.Schema({
   contractAddress: {
     type: String,
   },
-  onChainJobId: {
-    type: Number,
-    unique: true,
-    sparse: true,
-  },
 });
 
 module.exports = mongoose.model('Job', JobSchema);
