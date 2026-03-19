@@ -1,38 +1,41 @@
-import { FC, useState, useEffect } from 'react';
-import { fundContract } from '../utils/contractUtils';
-import { getBalance } from '../utils/solana';
-import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
-import { walletAdapter } from '../utils/adapter';
-import { WalletButton } from './WalletButton';
+import React, { FC, useState, useEffect } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
+import api from '../utils/api';
+import { useFreelanceClient } from '../hooks/useFreelanceClient';
+import { useWalletSigner } from '../hooks/useWalletSigner';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 
 interface ContractFundingProps {
   contract: any;
+  amount: number;
   onSuccess: () => void;
 }
 
-const ContractFunding: FC<ContractFundingProps> = ({ contract, onSuccess }) => {
+const ContractFunding: FC<ContractFundingProps> = ({ contract, amount, onSuccess }) => {
   const { address, isConnected } = useAppKitAccount();
-  const { walletProvider } = useAppKitProvider('solana');
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [balance, setBalance] = useState<number | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Amount to be funded is the contract amount
-  const amount = contract?.amount || 0;
+  const sdkClient = useFreelanceClient();
+  const walletSigner = useWalletSigner();
 
-  // Get wallet balance when isConnected
+  // Get wallet balance when connected
   useEffect(() => {
     const checkBalance = async () => {
-      if (isConnected && address) {
-        const userBalance = await getBalance(address.toString());
-        setBalance(userBalance);
+      if (isConnected && address && walletSigner) {
+        try {
+          const userBalance = await sdkClient.connection.getBalance(walletSigner.publicKey);
+          setBalance(userBalance / LAMPORTS_PER_SOL);
+        } catch (error) {
+          console.error('Error fetching balance:', error);
+        }
       }
     };
 
     checkBalance();
-  }, [isConnected, address]);
+  }, [isConnected, address, walletSigner]);
 
   const handleFund = async () => {
     if (!isConnected || !address) {
@@ -49,20 +52,24 @@ const ContractFunding: FC<ContractFundingProps> = ({ contract, onSuccess }) => {
     setError('');
 
     try {
-      const adapter = walletAdapter(walletProvider, address);
-
-      if (!adapter || !adapter.publicKey) {
-        throw new Error('Missing public key');
+      if (!walletSigner) {
+        throw new Error('Wallet signer not available');
       }
 
-      const result = await fundContract(adapter, contract, amount);
+      const result = await sdkClient.fundEscrow(
+        walletSigner,
+        new PublicKey(contract.clientWallet),
+        new PublicKey(contract.clientWallet),
+        BigInt(contract.onChainJobId)
+      );
 
-      if (result.success) {
-        setSuccess(true);
-        onSuccess();
-      } else {
-        setError(result.error || 'Failed to fund contract');
-      }
+      await api.post(`/api/contracts/${contract._id}/transaction`, {
+        type: 'fund',
+        signature: result.txId,
+      });
+
+      setSuccess(true);
+      onSuccess();
     } catch (err) {
       setError('An error occurred while funding the contract');
       console.error(err);
@@ -78,7 +85,9 @@ const ContractFunding: FC<ContractFundingProps> = ({ contract, onSuccess }) => {
       {!isConnected ? (
         <div className="wallet-connection">
           <p>Please connect your wallet to fund this contract</p>
-          <WalletButton />
+          <button onClick={() => window.open('', '_blank')} className="connect-wallet-btn">
+            Connect Wallet
+          </button>
         </div>
       ) : (
         <div className="funding-info">
@@ -89,7 +98,7 @@ const ContractFunding: FC<ContractFundingProps> = ({ contract, onSuccess }) => {
           {balance !== null && (
             <p>
               <strong>Your Balance:</strong> {balance.toFixed(4)} SOL
-              {balance < amount && <span className="balance-warning">(Insufficient funds)</span>}
+              {balance < amount && <span className="warning">(Insufficient funds)</span>}
             </p>
           )}
 
@@ -112,8 +121,8 @@ const ContractFunding: FC<ContractFundingProps> = ({ contract, onSuccess }) => {
           <div className="funding-note">
             <p>
               <strong>Note:</strong> Funding this contract will transfer {amount} SOL from your
-              wallet to an escrow account. The funds will be released to the freelancer when you
-              mark the job as completed.
+              wallet to an escrow account. The funds will be released to the freelancer when
+              milestones are completed and approved.
             </p>
           </div>
         </div>

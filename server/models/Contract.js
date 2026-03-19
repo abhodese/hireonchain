@@ -69,7 +69,7 @@ const contractSchema = new mongoose.Schema(
         },
         status: {
           type: String,
-          enum: ['pending', 'submitted', 'approved', 'paid'],
+          enum: ['pending', 'submitted', 'approved', 'paid', 'disputed', 'cancelled', 'split'],
           default: 'pending',
         },
         submissionHash: {
@@ -118,6 +118,44 @@ const contractSchema = new mongoose.Schema(
     },
     disputeReason: {
       type: String,
+    },
+    dispute: {
+      milestoneId: {
+        type: Number,
+      },
+      opener: {
+        type: String,
+      },
+      status: {
+        type: String,
+        enum: ['none', 'open', 'resolved'],
+        default: 'none',
+      },
+      ruling: {
+        type: String,
+        enum: ['none', 'client_wins', 'freelancer_wins', 'split'],
+        default: 'none',
+      },
+      splitClientBps: {
+        type: Number,
+        default: 0,
+      },
+      splitFreelancerBps: {
+        type: Number,
+        default: 0,
+      },
+      clientEvidence: {
+        type: String,
+      },
+      freelancerEvidence: {
+        type: String,
+      },
+      openedAt: {
+        type: Date,
+      },
+      resolvedAt: {
+        type: Date,
+      },
     },
     escrowAccount: {
       type: String,

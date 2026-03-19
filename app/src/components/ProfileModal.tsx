@@ -1,202 +1,183 @@
 import toast from 'react-hot-toast';
-import { UserProfile } from '../pages/Profile';
 import api from '../utils/api';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
+interface UserProfile {
+  _id: string;
+  username: string;
+  email: string;
+  walletAddress: string;
+  bio: string;
+  skills: string[];
+  reviews: {
+    _id: string;
+    reviewer: { username: string };
+    rating: number;
+    comment: string;
+    createdAt: string;
+  }[];
+  role: string;
+  rating: number;
+  createdAt: string;
+}
+
 interface ProfileProps {
-  formData: UserProfile;
-  setFormData: React.Dispatch<React.SetStateAction<UserProfile>>;
-  setEditMode: React.Dispatch<React.SetStateAction<boolean>>;
+  profile: UserProfile;
+  onClose: () => void;
+  onSave: (updatedData: Partial<UserProfile>) => Promise<void>;
 }
 
 const profileSchema = z.object({
   username: z.string().min(1, 'Username is required'),
   email: z.string().min(1, 'Email is required').email('Please enter a valid email'),
-  bio: z
-    .string()
-    .min(1, 'Bio is required')
-    .max(300, 'Bio must be under 300 characters'),
+  bio: z.string().min(1, 'Bio is required').max(300, 'Bio must be under 300 characters'),
   skills: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-export const ProfileModal = ({ formData, setFormData, setEditMode }: ProfileProps) => {
+export const ProfileModal = ({ profile, onClose, onSave }: ProfileProps) => {
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      username: formData.username,
-      email: formData.email,
-      bio: formData.bio ?? '',
-      skills: Array.isArray(formData.skills) ? formData.skills.join(', ') : '',
+      username: profile.username,
+      email: profile.email,
+      bio: profile.bio ?? '',
+      skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : '',
     },
   });
 
-  const bioValue = watch('bio');
-  const bioLength = bioValue?.length ?? 0;
+  const bioValue = watch('bio', '');
+  const bioLength = bioValue?.length || 0;
 
   useEffect(() => {
     reset({
-      username: formData.username,
-      email: formData.email,
-      bio: formData.bio ?? '',
-      skills: Array.isArray(formData.skills) ? formData.skills.join(', ') : '',
+      username: profile.username,
+      email: profile.email,
+      bio: profile.bio ?? '',
+      skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : '',
     });
-  }, [formData, reset]);
+  }, [profile, reset]);
 
-  const onSubmit = async (data: ProfileFormData) => {
+  const handleFormSubmit = async (data: ProfileFormData) => {
     try {
-      const updateData = {
-        ...formData,
+      const skillsArray =
+        typeof data.skills === 'string'
+          ? data.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+          : [];
+
+      await onSave({
         username: data.username,
         email: data.email,
         bio: data.bio,
-        skills: data.skills ? data.skills.split(',').map(skill => skill.trim()) : [],
-      };
-
-      const { data: responseData } = await api.put('/api/users/profile', updateData);
-      setFormData(responseData);
-      setEditMode(false);
-
-      localStorage.setItem(
-        'userInfo',
-        responseData.username
-          ? JSON.stringify({
-              ...updateData,
-              username: responseData.username,
-              email: responseData.email,
-            })
-          : '{}'
-      );
-
-      toast.success('Profile updated successfully');
+        skills: skillsArray,
+      });
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('Failed to update profile:', error);
       toast.error('Failed to update profile');
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 min-h-screen w-screen">
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg p-6 max-w-md w-full">
-        <div className="items-center mx-auto justify-between flex mb-12">
-          <h2 className="text-3xl font-bold text-center text-primary-600">Edit Profile</h2>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-primary-600">Edit Profile</h2>
           <button
             type="button"
-            onClick={() => setEditMode(false)}
-            className="text-secondary-600 hover:text-primary-600 text-2xl"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-400 text-xl"
           >
             ✕
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-secondary-900 mb-1">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+          <div className="form-group">
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
               Username
             </label>
             <input
-              type="text"
               id="username"
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
-                errors.username ? 'border-red-300' : 'border-secondary-300'
-              }`}
+              type="text"
               {...register('username')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             {errors.username && (
-              <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+              <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
             )}
           </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-secondary-900 mb-1">
+          <div className="form-group">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
             <input
-              type="email"
               id="email"
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
-                errors.email ? 'border-red-300' : 'border-secondary-300'
-              }`}
+              type="email"
               {...register('email')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
             )}
           </div>
 
-          <div>
-            <label htmlFor="bio" className="block text-sm font-medium text-secondary-900 mb-1">
-              Bio
+          <div className="form-group">
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+              Bio ({bioLength}/300)
             </label>
             <textarea
               id="bio"
               rows={4}
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed ${
-                errors.bio ? 'border-red-300' : 'border-secondary-300'
-              }`}
               {...register('bio')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
             />
             {errors.bio && (
-              <p className="mt-1 text-sm text-red-600">{errors.bio.message}</p>
+              <p className="text-red-500 text-sm mt-1">{errors.bio.message}</p>
             )}
           </div>
 
-          <div>
-            <label
-              className={`block text-sm font-medium mb-1 ${
-                bioLength >= 300 ? 'text-red-500' : 'text-secondary-900'
-              }`}
-            >
-              <span className="text-primary-600 underline">Characters:</span>
-              {` ${bioLength} / 300`}
+          <div className="form-group">
+            <label htmlFor="skills" className="block text-sm font-medium text-gray-700 mb-1">
+              Skills (comma-separated)
             </label>
+            <input
+              id="skills"
+              type="text"
+              placeholder="React, Solana, TypeScript"
+              {...register('skills')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
           </div>
 
-          {formData.role === 'freelancer' && (
-            <div>
-              <label
-                htmlFor="skills"
-                className="block text-sm text-secondary-600 font-semibold mb-1"
-              >
-                Skills (comma-separated)
-              </label>
-              <input
-                type="text"
-                id="skills"
-                placeholder="React, TypeScript, Node.js"
-                className="w-full bg-secondary-900/50 border border-secondary-600 rounded-lg px-4 py-2.5 text-primary-400 font-semibold focus:outline-none focus:border-primary-500 transition-colors"
-                {...register('skills')}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3 mt-6">
-          <button
-            type="submit"
-            className="font-semibold x-4 py-2 border-2 border-primary-600 hover:border-primary-500 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors w-1/2"
-          >
-            Save Changes
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditMode(false)}
-            className="font-semibold px-4 py-2 border-2 border-primary-600 hover:border-primary-400 text-primary-600 hover:text-primary-500 rounded-lg transition-colors w-1/2"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 font-semibold px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors disabled:opacity-50"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 font-semibold px-4 py-2 border-2 border-primary-600 hover:border-primary-400 text-primary-600 hover:text-primary-500 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

@@ -9,7 +9,18 @@ import { WalletButton } from '../components/WalletButton';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useFreelanceClient } from '../hooks/useFreelanceClient';
 import { useWalletSigner } from '../hooks/useWalletSigner';
-import { fetchPlatformConfig, PROGRAM_ID } from '@sdk/index';
+import {
+  fetchPlatformConfig,
+  fetchJob,
+  PROGRAM_ID,
+  DisputeRuling,
+  DisputeRulingClientWins,
+  DisputeRulingFreelancerWins,
+  DisputeRulingNone,
+  createDisputeRulingSplit,
+  JobStatus,
+  MilestoneStatus,
+} from '@sdk/index';
 
 interface Proposal {
   _id: string;
@@ -183,6 +194,32 @@ const JobDetail: React.FC = () => {
 
     fetchBalance();
   }, [isConnected, address, walletSigner, sdkClient.connection]);
+
+  useEffect(() => {
+    const fetchOnChainStatus = async () => {
+      if (!contract || !contract.onChainJobId) return;
+
+      setLoadingOnChainStatus(true);
+      try {
+        const clientPubkey = new PublicKey(contract.clientWallet);
+        const jobState = await fetchJob(
+          sdkClient.connection,
+          PROGRAM_ID,
+          clientPubkey,
+          BigInt(contract.onChainJobId)
+        );
+        if (jobState) {
+          setOnChainJobState(jobState.status);
+        }
+      } catch (error) {
+        console.error('Error fetching on-chain job status:', error);
+      } finally {
+        setLoadingOnChainStatus(false);
+      }
+    };
+
+    fetchOnChainStatus();
+  }, [contract, sdkClient.connection]);
 
   const onProposalSubmit = async (data: ProposalFormData) => {
     if (!isConnected || !address) {
@@ -408,6 +445,12 @@ const JobDetail: React.FC = () => {
 
   const [milestoneOperationLoading, setMilestoneOperationLoading] = useState<number | null>(null);
   const [submissionHash, setSubmissionHash] = useState<{ [key: number]: string }>({});
+  const [disputeMilestoneId, setDisputeMilestoneId] = useState<number | null>(null);
+  const [evidenceHash, setEvidenceHash] = useState<string>('');
+  const [resolveRuling, setResolveRuling] = useState<string>('none');
+
+  const [onChainJobState, setOnChainJobState] = useState<JobStatus | null>(null);
+  const [loadingOnChainStatus, setLoadingOnChainStatus] = useState(false);
 
   const handleSubmitMilestone = async (milestoneId: number) => {
     if (!contract || !walletSigner) {
@@ -593,6 +636,161 @@ const JobDetail: React.FC = () => {
       setContract(contractRes.data);
     } catch (error: any) {
       console.error('Cancel job failed:', error);
+      setContractError(parseOnChainError(error));
+    } finally {
+      setMilestoneOperationLoading(null);
+    }
+  };
+
+  const handleOpenDispute = async (milestoneId: number) => {
+    if (!contract || !walletSigner) {
+      setContractError('Missing contract or wallet connection');
+      return;
+    }
+
+    if (
+      !window.confirm(
+        'Are you sure you want to open a dispute for this milestone? This will pause all milestone operations until resolved.'
+      )
+    ) {
+      return;
+    }
+
+    setMilestoneOperationLoading(milestoneId);
+    setContractError('');
+
+    try {
+      const result = await sdkClient.openDispute(
+        walletSigner,
+        walletSigner.publicKey,
+        new PublicKey(contract.clientWallet),
+        BigInt(contract.onChainJobId),
+        milestoneId
+      );
+
+      await api.post(`/api/contracts/${contract._id}/transaction`, {
+        type: 'dispute',
+        signature: result.txId,
+        milestoneId,
+      });
+
+      const contractRes = await api.get(`/api/contracts/by-job/${job?._id}`);
+      setContract(contractRes.data);
+    } catch (error: any) {
+      console.error('Open dispute failed:', error);
+      setContractError(parseOnChainError(error));
+    } finally {
+      setMilestoneOperationLoading(null);
+    }
+  };
+
+  // 8.2 Submit Dispute Evidence
+  const handleSubmitEvidence = async () => {
+    if (!contract || !walletSigner) {
+      setContractError('Missing contract or wallet connection');
+      return;
+    }
+
+    if (!evidenceHash || evidenceHash.trim() === '') {
+      setContractError('Please enter an evidence hash (e.g., IPFS CID or document link)');
+      return;
+    }
+
+    setMilestoneOperationLoading(-2);
+    setContractError('');
+
+    try {
+      const result = await sdkClient.submitDisputeEvidence(
+        walletSigner,
+        walletSigner.publicKey,
+        new PublicKey(contract.clientWallet),
+        BigInt(contract.onChainJobId),
+        evidenceHash
+      );
+
+      await api.post(`/api/contracts/${contract._id}/transaction`, {
+        type: 'evidence',
+        signature: result.txId,
+        evidence: evidenceHash,
+      });
+
+      const contractRes = await api.get(`/api/contracts/by-job/${job?._id}`);
+      setContract(contractRes.data);
+      setEvidenceHash('');
+    } catch (error: any) {
+      console.error('Submit evidence failed:', error);
+      setContractError(parseOnChainError(error));
+    } finally {
+      setMilestoneOperationLoading(null);
+    }
+  };
+
+  const handleResolveDispute = async (milestoneId: number) => {
+    if (!contract || !walletSigner) {
+      setContractError('Missing contract or wallet connection');
+      return;
+    }
+
+    if (resolveRuling === 'none') {
+      setContractError('Please select a ruling');
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to resolve this dispute with ruling: ${resolveRuling}? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setMilestoneOperationLoading(-3);
+    setContractError('');
+
+    try {
+      // Map ruling string to DisputeRuling type
+      let ruling: DisputeRuling;
+      switch (resolveRuling) {
+        case 'client_wins':
+          ruling = DisputeRulingClientWins;
+          break;
+        case 'freelancer_wins':
+          ruling = DisputeRulingFreelancerWins;
+          break;
+        case 'split':
+          ruling = createDisputeRulingSplit(5000, 5000);
+          break;
+        default:
+          ruling = DisputeRulingNone;
+      }
+
+      const result = await sdkClient.resolveDispute(
+        walletSigner,
+        walletSigner.publicKey,
+        new PublicKey(contract.clientWallet),
+        BigInt(contract.onChainJobId),
+        milestoneId,
+        ruling,
+        new PublicKey(contract.clientWallet),
+        new PublicKey(contract.freelancerWallet)
+      );
+
+      await api.post(`/api/contracts/${contract._id}/transaction`, {
+        type: 'resolve',
+        signature: result.txId,
+        milestoneId,
+        ruling: resolveRuling,
+      });
+
+      const [contractRes, updatedJob] = await Promise.all([
+        api.get(`/api/contracts/by-job/${job?._id}`),
+        api.get(`/api/jobs/${id}`),
+      ]);
+      setContract(contractRes.data);
+      setJob(updatedJob.data);
+      setResolveRuling('none');
+    } catch (error: any) {
+      console.error('Resolve dispute failed:', error);
       setContractError(parseOnChainError(error));
     } finally {
       setMilestoneOperationLoading(null);
@@ -803,11 +1001,94 @@ const JobDetail: React.FC = () => {
                             <span className="paid-icon">✓</span> Payment released
                           </div>
                         )}
+
+                        {/* Dispute button - available for both client and freelancer on submitted/approved milestones */}
+                        {(m.status === 'submitted' || m.status === 'approved') &&
+                          (isOwner || isAssigned) && (
+                            <button
+                              onClick={() => handleOpenDispute(i)}
+                              disabled={milestoneOperationLoading === i}
+                              className="milestone-action-btn dispute-btn"
+                            >
+                              {milestoneOperationLoading === i ? 'Opening...' : 'Open Dispute'}
+                            </button>
+                          )}
                       </div>
                     )}
                   </div>
                 ))}
               </div>
+
+              {/* Dispute Section - Show when contract is disputed */}
+              {contract.status === 'disputed' && walletSigner && (
+                <div className="dispute-section">
+                  <h3>⚠️ Dispute Active</h3>
+                  <p className="dispute-notice">
+                    A dispute has been opened. All milestone operations are paused until the dispute
+                    is resolved.
+                  </p>
+
+                  {/* Evidence Submission - Available to both parties */}
+                  <div className="evidence-form">
+                    <h4>Submit Evidence</h4>
+                    <p>
+                      <small>
+                        Provide a link to your evidence (e.g., IPFS CID, Google Drive link, etc.)
+                      </small>
+                    </p>
+                    <div className="evidence-input-group">
+                      <input
+                        type="text"
+                        placeholder="Evidence hash or link"
+                        value={evidenceHash}
+                        onChange={e => setEvidenceHash(e.target.value)}
+                        className="evidence-input"
+                      />
+                      <button
+                        onClick={handleSubmitEvidence}
+                        disabled={milestoneOperationLoading === -2 || !evidenceHash.trim()}
+                        className="evidence-submit-btn"
+                      >
+                        {milestoneOperationLoading === -2 ? 'Submitting...' : 'Submit Evidence'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Resolve Dispute - Arbitrator Only */}
+                  {userRole === 'admin' && (
+                    <div className="resolve-dispute-form">
+                      <h4>Resolve Dispute (Arbitrator Only)</h4>
+                      <div className="ruling-select">
+                        <label htmlFor="ruling">Select Ruling:</label>
+                        <select
+                          id="ruling"
+                          value={resolveRuling}
+                          onChange={e => setResolveRuling(e.target.value)}
+                        >
+                          <option value="none">-- Select Ruling --</option>
+                          <option value="client_wins">Client Wins (Full Refund)</option>
+                          <option value="freelancer_wins">Freelancer Wins (Full Payment)</option>
+                          <option value="split">Split (50/50)</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const disputedMilestone = contract.milestones.find(
+                            m => m.status === 'disputed'
+                          );
+                          if (disputedMilestone) {
+                            handleResolveDispute(disputedMilestone.milestoneId);
+                          }
+                        }}
+                        disabled={milestoneOperationLoading === -3 || resolveRuling === 'none'}
+                        className="resolve-btn"
+                      >
+                        {milestoneOperationLoading === -3 ? 'Resolving...' : 'Resolve Dispute'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Cancel Job button for client - only when funded and no approved milestones */}
               {contract.status === 'funded' && isOwner && walletSigner && (

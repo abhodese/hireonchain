@@ -7,7 +7,18 @@ const CLIENT_ONLY_TYPES = ['fund', 'approve', 'release', 'cancel'];
 
 const FREELANCER_ONLY_TYPES = ['submit'];
 
-const ON_CHAIN_TYPES = ['fund', 'submit', 'approve', 'release', 'cancel', 'dispute', 'resolve'];
+const EITHER_TYPES = ['dispute', 'evidence'];
+
+const ON_CHAIN_TYPES = [
+  'fund',
+  'submit',
+  'approve',
+  'release',
+  'cancel',
+  'dispute',
+  'evidence',
+  'resolve',
+];
 
 // @desc    Create a new contract
 // @route   POST /api/contracts
@@ -126,6 +137,7 @@ const getContractsByJob = async (req, res) => {
     // Only allow client or assigned freelancer to view the contracts
     if (
       job.client.toString() !== req.user._id.toString() &&
+      job.assignedTo &&
       job.assignedTo.toString() !== req.user._id.toString()
     ) {
       return res.status(403).json({ message: 'Not authorized' });
@@ -251,7 +263,7 @@ const createOnchainContract = async (req, res) => {
 // @access  Private
 const recordTransaction = async (req, res) => {
   try {
-    const { type, signature, milestoneId } = req.body;
+    const { type, signature, milestoneId, evidence, ruling } = req.body;
     const contract = await Contract.findById(req.params.id);
 
     if (!contract) {
@@ -260,8 +272,13 @@ const recordTransaction = async (req, res) => {
 
     const isClient = contract.clientId.toString() === req.user._id.toString();
     const isFreelancer = contract.freelancerId.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
 
-    if (!isClient && !isFreelancer) {
+    if (type === 'resolve') {
+      if (!isAdmin) {
+        return res.status(403).json({ message: 'Only the arbitrator can resolve disputes' });
+      }
+    } else if (!isClient && !isFreelancer) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -296,10 +313,70 @@ const recordTransaction = async (req, res) => {
 
     contract.transactions.push({ type, signature, milestoneId });
 
+    if (type === 'dispute') {
+      contract.status = 'disputed';
+      if (!contract.dispute) {
+        contract.dispute = {};
+      }
+      contract.dispute.status = 'open';
+      contract.dispute.milestoneId = milestoneId;
+      contract.dispute.opener = isClient ? contract.clientWallet : contract.freelancerWallet;
+      contract.dispute.openedAt = new Date();
+    }
+
+    if (type === 'evidence') {
+      if (!contract.dispute || contract.dispute.status !== 'open') {
+        return res.status(400).json({ message: 'No open dispute found' });
+      }
+      if (!evidence) {
+        return res.status(400).json({ message: 'Evidence hash is required' });
+      }
+      if (isClient) {
+        contract.dispute.clientEvidence = evidence;
+      } else {
+        contract.dispute.freelancerEvidence = evidence;
+      }
+    }
+
+    // Handle dispute resolution
+    if (type === 'resolve') {
+      if (!contract.dispute || contract.dispute.status !== 'open') {
+        return res.status(400).json({ message: 'No open dispute found' });
+      }
+      if (!ruling) {
+        return res.status(400).json({ message: 'Ruling is required' });
+      }
+      contract.dispute.status = 'resolved';
+      contract.dispute.ruling = ruling;
+      contract.dispute.resolvedAt = new Date();
+
+      if (ruling === 'client_wins') {
+        if (milestoneId !== undefined && contract.milestones[milestoneId]) {
+          contract.milestones[milestoneId].status = 'cancelled';
+        }
+      } else if (ruling === 'freelancer_wins') {
+        if (milestoneId !== undefined && contract.milestones[milestoneId]) {
+          contract.milestones[milestoneId].status = 'paid';
+        }
+      } else if (ruling === 'split') {
+        if (milestoneId !== undefined && contract.milestones[milestoneId]) {
+          contract.milestones[milestoneId].status = 'split';
+        }
+      }
+
+      const allTerminal = contract.milestones.every(m =>
+        ['paid', 'cancelled', 'split'].includes(m.status)
+      );
+      if (allTerminal) {
+        contract.status = 'completed';
+      } else {
+        contract.status = 'funded';
+      }
+    }
+
     const contractStatusMap = {
       fund: 'funded',
       cancel: 'cancelled',
-      dispute: 'disputed',
     };
     if (contractStatusMap[type]) {
       contract.status = contractStatusMap[type];

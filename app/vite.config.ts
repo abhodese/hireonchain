@@ -26,6 +26,8 @@ export default defineConfig({
       url: 'url',
       '@solana/web3.js': path.resolve(__dirname, './node_modules/@solana/web3.js'),
       '@coral-xyz/borsh': path.resolve(__dirname, './node_modules/@coral-xyz/borsh'),
+      'vite-plugin-node-polyfills/shims/buffer': path.resolve(__dirname, './node_modules/vite-plugin-node-polyfills/shims/buffer'),
+      'vite-plugin-node-polyfills/shims/process': path.resolve(__dirname, './node_modules/vite-plugin-node-polyfills/shims/process'),
     },
     dedupe: ['@solana/web3.js', '@coral-xyz/borsh'],
   },
