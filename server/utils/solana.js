@@ -83,7 +83,7 @@ const verifyProgramTransaction = async (signature, expectedProgramId) => {
   }
 
   const involvesProgram = transaction.transaction.message.accountKeys.some(
-    key => key.pubkey.toString() === programId && key.signer === false
+    key => key.toString() === programId
   );
 
   if (!involvesProgram) {

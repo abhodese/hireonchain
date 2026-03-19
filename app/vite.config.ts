@@ -26,10 +26,11 @@ export default defineConfig({
       url: 'url',
       '@solana/web3.js': path.resolve(__dirname, './node_modules/@solana/web3.js'),
       '@coral-xyz/borsh': path.resolve(__dirname, './node_modules/@coral-xyz/borsh'),
+      'bn.js': path.resolve(__dirname, './node_modules/bn.js'),
       'vite-plugin-node-polyfills/shims/buffer': path.resolve(__dirname, './node_modules/vite-plugin-node-polyfills/shims/buffer'),
       'vite-plugin-node-polyfills/shims/process': path.resolve(__dirname, './node_modules/vite-plugin-node-polyfills/shims/process'),
     },
-    dedupe: ['@solana/web3.js', '@coral-xyz/borsh'],
+    dedupe: ['@solana/web3.js', '@coral-xyz/borsh', 'bn.js'],
   },
   define: {
     Buffer: 'globalThis.Buffer',

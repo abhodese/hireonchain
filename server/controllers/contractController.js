@@ -58,10 +58,22 @@ const getContracts = async (req, res) => {
     const contracts = await Contract.find({
       $or: [{ clientId: req.user._id }, { freelancerId: req.user._id }],
     })
-      .populate('jobId')
-      .populate('clientId', 'name email')
-      .populate('freelancerId', 'name email');
-    res.json(contracts);
+      .populate('jobId', 'title')
+      .populate('clientId', 'username email')
+      .populate('freelancerId', 'username email');
+
+    const mapped = contracts.map(c => {
+      const obj = c.toObject();
+      return {
+        ...obj,
+        job: obj.jobId,
+        client: obj.clientId,
+        freelancer: obj.freelancerId,
+        amount: obj.totalAmount / 1_000_000_000,
+      };
+    });
+
+    res.json(mapped);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

@@ -5,11 +5,15 @@ import { PublicKey } from "@solana/web3.js";
  * Throws an error if not configured
  */
 export const getProgramId = (): PublicKey => {
-    // Server-side (Node.js): process.env.SOLANA_PROGRAM_ID
-    // Client-side (Vite): import.meta.env.VITE_SOLANA_PROGRAM_ID
-    const programIdEnv = typeof process !== 'undefined'
-        ? process.env?.SOLANA_PROGRAM_ID
-        : (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_SOLANA_PROGRAM_ID : undefined);
+    let programIdEnv: string | undefined;
+
+    if (typeof import.meta !== 'undefined') {
+        programIdEnv = (import.meta as any).env?.VITE_SOLANA_PROGRAM_ID;
+    }
+
+    if (!programIdEnv && typeof process !== 'undefined') {
+        programIdEnv = process.env?.SOLANA_PROGRAM_ID;
+    }
 
     if (!programIdEnv) {
         throw new Error('Program ID not configured. Set SOLANA_PROGRAM_ID (server) or VITE_SOLANA_PROGRAM_ID (client) in environment variables.');

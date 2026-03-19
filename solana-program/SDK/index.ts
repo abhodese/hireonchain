@@ -81,21 +81,33 @@ export {
   MilestoneStatus,
   DisputeStatus,
 
-  // Dispute ruling
-  DisputeRuling,
   DisputeRulingNone,
   DisputeRulingClientWins,
   DisputeRulingFreelancerWins,
   createDisputeRulingSplit,
 
-  // Account types
+  FreelanceErrorCode,
+  FreelanceClientError,
+
+  // Legacy enums & classes (deprecated)
+  EscrowInstruction,
+  EscrowErrorCode,
+  EscrowClientError,
+} from "./types";
+
+// Type-only exports (erased at runtime — must use `export type`)
+export type {
+  // Dispute ruling type
+  DisputeRuling,
+
+  // Account state types
   PlatformConfigState,
   JobState,
   MilestoneState,
   DisputeState,
   UserStatsState,
 
-  // Instruction arguments
+  // Instruction argument types
   InitializePlatformArgs,
   CreateJobArgs,
   CreateMilestoneArgs,
@@ -106,10 +118,6 @@ export {
   SetPlatformFeeArgs,
   WithdrawPlatformFeesArgs,
 
-  // Errors
-  FreelanceErrorCode,
-  FreelanceClientError,
-
   // Wallet & transaction types
   WalletSigner,
   TransactionStatus,
@@ -118,10 +126,7 @@ export {
   FreelanceClientConfig,
 
   // Legacy types (deprecated)
-  EscrowInstruction,
   EscrowAccountState,
-  EscrowErrorCode,
-  EscrowClientError,
   EscrowTxResult,
   EscrowClientConfig,
 } from "./types";

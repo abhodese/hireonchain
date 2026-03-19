@@ -1,5 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import * as borsh from "@coral-xyz/borsh";
+import BN from "bn.js";
 
 import {
   InitializePlatformArgs,
@@ -90,6 +91,9 @@ const WithdrawPlatformFeesSchema = borsh.struct([
 
 // =============== Helper Functions ===============
 
+function toBN(value: bigint): BN {
+  return new BN(value.toString());
+}
 
 function encodeWithDiscriminator<T>(
   discriminator: Buffer,
@@ -184,8 +188,8 @@ export function ixCreateJob(
   const { pda: vaultPda } = deriveVaultPda(programId, jobPda);
 
   const data = encodeWithDiscriminator(DISCRIMINATORS.create_job, CreateJobSchema, {
-    jobId,
-    milestoneAmounts,
+    jobId: toBN(jobId),
+    milestoneAmounts: milestoneAmounts.map(toBN),
     milestoneDescriptions,
   });
 
@@ -228,7 +232,7 @@ export function ixCreateMilestone(
 
   const data = encodeWithDiscriminator(DISCRIMINATORS.create_milestone, CreateMilestoneSchema, {
     milestoneId,
-    amount,
+    amount: toBN(amount),
     descriptionHash,
   });
 
@@ -605,7 +609,7 @@ export function ixWithdrawPlatformFees(
 ): TransactionInstruction {
   const { pda: platformConfigPda } = derivePlatformConfigPda(programId);
 
-  const data = encodeWithDiscriminator(DISCRIMINATORS.withdraw_platform_fees, WithdrawPlatformFeesSchema, { amount });
+  const data = encodeWithDiscriminator(DISCRIMINATORS.withdraw_platform_fees, WithdrawPlatformFeesSchema, { amount: toBN(amount) });
 
   const keys = [
     { pubkey: admin, isSigner: true, isWritable: false },
