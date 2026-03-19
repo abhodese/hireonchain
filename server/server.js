@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const mongoose = require('mongoose');
 const parsejson = require('parsejson-pro');
 const swaggerUi = require('swagger-ui-express');
@@ -25,9 +26,22 @@ const sanitizeInput = (obj) => {
   return clean;
 };
 
-// Core Middleware
-app.use(cors());
-app.use(express.json());
+// Security Middleware
+app.use(helmet());
+
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',');
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
+app.use(express.json({ limit: '1mb' }));
 
 app.use((req, _res, next) => {
   if (req.body) req.body = sanitizeInput(req.body);

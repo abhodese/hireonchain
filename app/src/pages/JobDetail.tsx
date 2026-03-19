@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { WalletButton } from '../components/WalletButton';
 import { useAppKitAccount } from '@reown/appkit/react';
@@ -290,11 +291,11 @@ const JobDetail: React.FC = () => {
   const validateMilestones = (): boolean => {
     for (const m of milestones) {
       if (!m.amount || !m.description) {
-        setContractError('All milestones must have amount and description');
+        showContractError('All milestones must have amount and description');
         return false;
       }
       if (parseFloat(m.amount) <= 0) {
-        setContractError('Milestone amounts must be greater than 0');
+        showContractError('Milestone amounts must be greater than 0');
         return false;
       }
     }
@@ -304,7 +305,7 @@ const JobDetail: React.FC = () => {
   // On-chain contract creation handler
   const handleCreateOnchainContract = async () => {
     if (!job || !job.assignedTo || !walletSigner) {
-      setContractError('Missing job, freelancer assignment, or wallet connection');
+      showContractError('Missing job, freelancer assignment, or wallet connection');
       return;
     }
 
@@ -350,7 +351,7 @@ const JobDetail: React.FC = () => {
       setContract(contractRes.data);
     } catch (error: any) {
       console.error('Create on-chain contract error:', error);
-      setContractError(error.message || 'Failed to create on-chain contract');
+      showContractError(parseOnChainError(error));
     } finally {
       setCreatingContract(false);
     }
@@ -405,9 +406,14 @@ const JobDetail: React.FC = () => {
     return errorMsg || 'Transaction failed. Please try again.';
   };
 
+  const showContractError = (message: string) => {
+    setContractError(message);
+    toast.error(message, { id: 'tx-status' });
+  };
+
   const handleFundEscrow = async () => {
     if (!contract || !walletSigner) {
-      setContractError('Missing contract or wallet connection');
+      showContractError('Missing contract or wallet connection');
       return;
     }
 
@@ -437,7 +443,7 @@ const JobDetail: React.FC = () => {
       setContract(contractRes.data);
     } catch (error: any) {
       console.error('Fund escrow failed:', error);
-      setContractError(parseOnChainError(error));
+      showContractError(parseOnChainError(error));
     } finally {
       setCreatingContract(false);
     }
@@ -454,13 +460,13 @@ const JobDetail: React.FC = () => {
 
   const handleSubmitMilestone = async (milestoneId: number) => {
     if (!contract || !walletSigner) {
-      setContractError('Missing contract or wallet connection');
+      showContractError('Missing contract or wallet connection');
       return;
     }
 
     const hash = submissionHash[milestoneId];
     if (!hash || hash.trim() === '') {
-      setContractError('Please enter a submission hash (e.g., IPFS CID or work link)');
+      showContractError('Please enter a submission hash (e.g., IPFS CID or work link)');
       return;
     }
 
@@ -496,7 +502,7 @@ const JobDetail: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Submit milestone failed:', error);
-      setContractError(parseOnChainError(error));
+      showContractError(parseOnChainError(error));
     } finally {
       setMilestoneOperationLoading(null);
     }
@@ -504,7 +510,7 @@ const JobDetail: React.FC = () => {
 
   const handleApproveMilestone = async (milestoneId: number) => {
     if (!contract || !walletSigner) {
-      setContractError('Missing contract or wallet connection');
+      showContractError('Missing contract or wallet connection');
       return;
     }
 
@@ -533,7 +539,7 @@ const JobDetail: React.FC = () => {
       setContract(contractRes.data);
     } catch (error: any) {
       console.error('Approve milestone failed:', error);
-      setContractError(parseOnChainError(error));
+      showContractError(parseOnChainError(error));
     } finally {
       setMilestoneOperationLoading(null);
     }
@@ -541,7 +547,7 @@ const JobDetail: React.FC = () => {
 
   const handleReleaseMilestone = async (milestoneId: number) => {
     if (!contract || !walletSigner) {
-      setContractError('Missing contract or wallet connection');
+      showContractError('Missing contract or wallet connection');
       return;
     }
 
@@ -582,7 +588,7 @@ const JobDetail: React.FC = () => {
       setContract(contractRes.data);
     } catch (error: any) {
       console.error('Release milestone failed:', error);
-      setContractError(parseOnChainError(error));
+      showContractError(parseOnChainError(error));
     } finally {
       setMilestoneOperationLoading(null);
     }
@@ -590,7 +596,7 @@ const JobDetail: React.FC = () => {
 
   const handleCancelJob = async () => {
     if (!contract || !walletSigner) {
-      setContractError('Missing contract or wallet connection');
+      showContractError('Missing contract or wallet connection');
       return;
     }
 
@@ -636,7 +642,7 @@ const JobDetail: React.FC = () => {
       setContract(contractRes.data);
     } catch (error: any) {
       console.error('Cancel job failed:', error);
-      setContractError(parseOnChainError(error));
+      showContractError(parseOnChainError(error));
     } finally {
       setMilestoneOperationLoading(null);
     }
@@ -644,7 +650,7 @@ const JobDetail: React.FC = () => {
 
   const handleOpenDispute = async (milestoneId: number) => {
     if (!contract || !walletSigner) {
-      setContractError('Missing contract or wallet connection');
+      showContractError('Missing contract or wallet connection');
       return;
     }
 
@@ -678,7 +684,7 @@ const JobDetail: React.FC = () => {
       setContract(contractRes.data);
     } catch (error: any) {
       console.error('Open dispute failed:', error);
-      setContractError(parseOnChainError(error));
+      showContractError(parseOnChainError(error));
     } finally {
       setMilestoneOperationLoading(null);
     }
@@ -687,12 +693,12 @@ const JobDetail: React.FC = () => {
   // 8.2 Submit Dispute Evidence
   const handleSubmitEvidence = async () => {
     if (!contract || !walletSigner) {
-      setContractError('Missing contract or wallet connection');
+      showContractError('Missing contract or wallet connection');
       return;
     }
 
     if (!evidenceHash || evidenceHash.trim() === '') {
-      setContractError('Please enter an evidence hash (e.g., IPFS CID or document link)');
+      showContractError('Please enter an evidence hash (e.g., IPFS CID or document link)');
       return;
     }
 
@@ -719,7 +725,7 @@ const JobDetail: React.FC = () => {
       setEvidenceHash('');
     } catch (error: any) {
       console.error('Submit evidence failed:', error);
-      setContractError(parseOnChainError(error));
+      showContractError(parseOnChainError(error));
     } finally {
       setMilestoneOperationLoading(null);
     }
@@ -727,12 +733,12 @@ const JobDetail: React.FC = () => {
 
   const handleResolveDispute = async (milestoneId: number) => {
     if (!contract || !walletSigner) {
-      setContractError('Missing contract or wallet connection');
+      showContractError('Missing contract or wallet connection');
       return;
     }
 
     if (resolveRuling === 'none') {
-      setContractError('Please select a ruling');
+      showContractError('Please select a ruling');
       return;
     }
 
@@ -791,7 +797,7 @@ const JobDetail: React.FC = () => {
       setResolveRuling('none');
     } catch (error: any) {
       console.error('Resolve dispute failed:', error);
-      setContractError(parseOnChainError(error));
+      showContractError(parseOnChainError(error));
     } finally {
       setMilestoneOperationLoading(null);
     }

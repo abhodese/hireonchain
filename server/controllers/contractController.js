@@ -1,7 +1,7 @@
 const Contract = require('../models/Contract');
 const Job = require('../models/Job');
 const { getNextSequence } = require('../utils/counter');
-const { verifyTransaction } = require('../utils/solana');
+const { verifyProgramTransaction } = require('../utils/solana');
 
 const CLIENT_ONLY_TYPES = ['fund', 'approve', 'release', 'cancel'];
 
@@ -45,7 +45,8 @@ const createContract = async (req, res) => {
     await contract.save();
     res.status(201).json(contract);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Create contract error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -62,7 +63,8 @@ const getContracts = async (req, res) => {
       .populate('freelancerId', 'name email');
     res.json(contracts);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -80,15 +82,31 @@ const getContractById = async (req, res) => {
       return res.status(404).json({ message: 'Contract not found' });
     }
 
+    if (
+      contract.clientId._id.toString() !== req.user._id.toString() &&
+      contract.freelancerId._id.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
     res.json(contract);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get contract by ID error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
 // @desc    Update contract status
 // @route   PUT /api/contracts/:id/status
 // @access  Private
+const VALID_STATUS_TRANSITIONS = {
+  pending: ['created'],
+  created: ['funded', 'cancelled'],
+  funded: ['in_progress', 'cancelled', 'disputed'],
+  in_progress: ['completed', 'disputed', 'cancelled'],
+  disputed: ['funded', 'in_progress', 'completed'],
+};
+
 const updateContractStatus = async (req, res) => {
   try {
     const { status, transactionSignature, releaseTransaction } = req.body;
@@ -106,6 +124,13 @@ const updateContractStatus = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    const allowedTransitions = VALID_STATUS_TRANSITIONS[contract.status];
+    if (!allowedTransitions || !allowedTransitions.includes(status)) {
+      return res.status(400).json({
+        message: `Invalid status transition from '${contract.status}' to '${status}'`,
+      });
+    }
+
     contract.status = status;
     if (transactionSignature) {
       contract.transactionSignature = transactionSignature;
@@ -117,7 +142,8 @@ const updateContractStatus = async (req, res) => {
     await contract.save();
     res.json(contract);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Update contract status error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -143,9 +169,9 @@ const getContractsByJob = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const contracts = await Contract.find({ job: jobId })
-      .populate('client', 'username email walletAddress')
-      .populate('freelancer', 'username email walletAddress')
+    const contracts = await Contract.find({ jobId })
+      .populate('clientId', 'username email walletAddress')
+      .populate('freelancerId', 'username email walletAddress')
       .sort({ createdAt: -1 });
 
     res.json(contracts);
@@ -175,13 +201,20 @@ const disputeContract = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    if (!['funded', 'in_progress'].includes(contract.status)) {
+      return res.status(400).json({
+        message: `Cannot dispute a contract with status '${contract.status}'`,
+      });
+    }
+
     contract.status = 'disputed';
     contract.disputeReason = disputeReason;
     await contract.save();
 
     res.json(contract);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -194,7 +227,8 @@ const getNextJobId = async (req, res) => {
     res.json({ onChainJobId: nextId });
   } catch (error) {
     console.error('Get next job ID error:', error);
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -223,6 +257,26 @@ const createOnchainContract = async (req, res) => {
 
     if (!job.assignedTo) {
       return res.status(400).json({ message: 'No freelancer assigned' });
+    }
+
+    if (!Array.isArray(milestones) || milestones.length === 0) {
+      return res.status(400).json({ message: 'At least one milestone is required' });
+    }
+    if (milestones.length > 10) {
+      return res.status(400).json({ message: 'Maximum 10 milestones allowed' });
+    }
+    for (const m of milestones) {
+      const amount = parseFloat(m.amount);
+      if (
+        !m.description ||
+        typeof m.description !== 'string' ||
+        m.description.trim().length === 0
+      ) {
+        return res.status(400).json({ message: 'Each milestone must have a description' });
+      }
+      if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ message: 'Milestone amounts must be positive numbers' });
+      }
     }
 
     const totalAmount = milestones.reduce(
@@ -254,7 +308,8 @@ const createOnchainContract = async (req, res) => {
     res.status(201).json({ contract, onChainJobId });
   } catch (error) {
     console.error('Create on-chain contract error:', error);
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -295,7 +350,7 @@ const recordTransaction = async (req, res) => {
         return res.status(400).json({ message: 'Transaction signature is required' });
       }
 
-      const verification = await verifyTransaction(signature);
+      const verification = await verifyProgramTransaction(signature);
 
       if (!verification.valid) {
         console.error('Transaction verification failed:', verification.error);
@@ -404,7 +459,8 @@ const recordTransaction = async (req, res) => {
     res.json(contract);
   } catch (error) {
     console.error('Record transaction error:', error);
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -432,7 +488,8 @@ const getContractByJob = async (req, res) => {
     res.json(contract);
   } catch (error) {
     console.error('Get contract by job error:', error);
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 

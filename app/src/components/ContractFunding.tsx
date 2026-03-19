@@ -1,5 +1,6 @@
 import React, { FC, useState, useEffect } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
+import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useFreelanceClient } from '../hooks/useFreelanceClient';
 import { useWalletSigner } from '../hooks/useWalletSigner';
@@ -39,12 +40,16 @@ const ContractFunding: FC<ContractFundingProps> = ({ contract, amount, onSuccess
 
   const handleFund = async () => {
     if (!isConnected || !address) {
-      setError('Please connect your wallet first');
+      const msg = 'Please connect your wallet first';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
     if (balance === null || balance < amount) {
-      setError('Insufficient funds in your wallet');
+      const msg = 'Insufficient funds in your wallet';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -71,7 +76,9 @@ const ContractFunding: FC<ContractFundingProps> = ({ contract, amount, onSuccess
       setSuccess(true);
       onSuccess();
     } catch (err) {
-      setError('An error occurred while funding the contract');
+      const msg = 'An error occurred while funding the contract';
+      setError(msg);
+      toast.error(msg, { id: 'tx-status' });
       console.error(err);
     } finally {
       setLoading(false);

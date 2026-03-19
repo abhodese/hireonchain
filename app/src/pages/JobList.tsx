@@ -36,9 +36,10 @@ const JobList: React.FC = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await api.get('/api/jobs');
-        setJobs(response.data);
-        setFilteredJobs(response.data.filter((job: Job) => job.status === 'open'));
+        const response = await api.get('/api/jobs?limit=100');
+        const jobsData = response.data.jobs || response.data;
+        setJobs(jobsData);
+        setFilteredJobs(jobsData.filter((job: Job) => job.status === 'open'));
       } catch (error) {
         console.error('Error fetching jobs:', error);
         setError('Failed to load jobs');
