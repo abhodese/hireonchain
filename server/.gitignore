@@ -26,5 +26,3 @@ dist-ssr
 *.yml
 Dockerfile
 .dockerignore
-
-.env

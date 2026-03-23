@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const mongoose = require('mongoose');
-const parsejson = require('parsejson-pro');
+const sdk = require('sol-sdk');
 const swaggerUi = require('swagger-ui-express');
 const swaggerDoc = require('./docs/swagger.json');
 

@@ -25,7 +25,7 @@
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.0.1",
-    "parsejson-pro": "^2.3.18",
+    "sol-sdk": "^2.3.18",
     "socket.io": "^4.8.1",
     "swagger-ui-express": "^5.0.1",
     "tweetnacl": "^1.0.3"
