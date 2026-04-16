@@ -450,7 +450,7 @@ const JobDetail: React.FC = () => {
 
       const [contractRes] = await Promise.all([
         api.get(`/api/contracts/by-job/${job?._id}`),
-        sdkClient.connection.getBalance(walletSigner.publicKey).then(b => {
+        sdkClient.connection.getBalance(walletSigner.publicKey).then((b: number) => {
           setWalletBalance(b / LAMPORTS_PER_SOL);
         }),
       ]);
@@ -608,7 +608,7 @@ const JobDetail: React.FC = () => {
 
       const [contractRes] = await Promise.all([
         api.get(`/api/contracts/by-job/${job?._id}`),
-        sdkClient.connection.getBalance(walletSigner.publicKey).then(b => {
+        sdkClient.connection.getBalance(walletSigner.publicKey).then((b: number) => {
           setWalletBalance(b / LAMPORTS_PER_SOL);
         }),
       ]);
@@ -660,7 +660,7 @@ const JobDetail: React.FC = () => {
       const [updatedJob, contractRes] = await Promise.all([
         api.get(`/api/jobs/${id}`),
         api.get(`/api/contracts/by-job/${job?._id}`),
-        sdkClient.connection.getBalance(walletSigner.publicKey).then(b => {
+        sdkClient.connection.getBalance(walletSigner.publicKey).then((b: number) => {
           setWalletBalance(b / LAMPORTS_PER_SOL);
         }),
       ]);
