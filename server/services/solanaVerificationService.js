@@ -886,6 +886,74 @@ async function verifyAndReconcile(signature, claimedAction, contract, opts = {})
   }
 }
 
+/**
+ * Simple transaction verification for happy path validation.
+ * 
+ * @param {string} signature - Transaction signature
+ * @param {string} expectedWalletAddress - Expected wallet address to verify involvement
+ * @returns {Promise<{verified: boolean, error?: string, transaction?: object, slot?: number}>}
+ */
+async function simpleTransactionVerify(signature, expectedWalletAddress) {
+  try {
+    // Validate inputs
+    if (!signature || typeof signature !== 'string') {
+      return { verified: false, error: 'Transaction signature is required and must be a string' };
+    }
+
+    if (!expectedWalletAddress || typeof expectedWalletAddress !== 'string') {
+      return { verified: false, error: 'Expected wallet address is required' };
+    }
+
+    // Step 1: Fetch transaction from Devnet
+    const { tx, error } = await fetchTransaction(signature);
+    if (error) {
+      return { verified: false, error };
+    }
+
+    // Step 2: Verify transaction exists and succeeded
+    if (!tx) {
+      return { verified: false, error: 'Transaction not found on-chain' };
+    }
+
+    if (tx.meta?.err) {
+      return { 
+        verified: false, 
+        error: `Transaction failed on-chain: ${JSON.stringify(tx.meta.err)}` 
+      };
+    }
+
+    // Step 3: Extract all account keys from transaction
+    const allAccountKeys = extractAllAccountKeys(tx);
+    if (!allAccountKeys) {
+      return { verified: false, error: 'Could not parse transaction message format' };
+    }
+
+    // Step 4: Check if expected wallet is involved
+    const walletInvolved = allAccountKeys.includes(expectedWalletAddress);
+    if (!walletInvolved) {
+      return { 
+        verified: false, 
+        error: `Expected wallet address ${expectedWalletAddress} not found in transaction accounts` 
+      };
+    }
+
+    // Return successful verification
+    return {
+      verified: true,
+      transaction: {
+        signature,
+        status: 'success',
+        slot: tx.slot,
+        blockTime: tx.blockTime,
+        involvedWallet: expectedWalletAddress,
+      },
+    };
+  } catch (err) {
+    console.error(`Simple transaction verification error for signature '${signature}':`, err);
+    return { verified: false, error: `Verification failed: ${err.message}` };
+  }
+}
+
 module.exports = {
   verifyAndReconcile,
   fetchTransaction,
@@ -900,4 +968,5 @@ module.exports = {
   readVaultBalance,
   readPlatformConfig,
   ACTION_VERIFIERS,
+  simpleTransactionVerify,
 };
